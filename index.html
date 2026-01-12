@@ -1,162 +1,482 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Schichtkalender (ICS) – Web Generator</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
   <style>
-    body{
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial;
-      background:#f5f6fa;
-      margin:0;
-      padding:30px;
-    }
-    h1{
-      text-align:center;
-      margin-bottom:24px;
-    }
-    .box{
-      max-width:520px;
-      margin:0 auto;
-      background:#fff;
-      border-radius:14px;
-      padding:24px;
-      box-shadow:0 10px 30px rgba(0,0,0,.08);
-    }
-    label{
-      display:block;
-      font-weight:600;
-      margin-bottom:6px;
-    }
-    select,input{
-      width:100%;
-      padding:12px;
-      border-radius:10px;
-      border:1px solid #ccc;
-      margin-bottom:16px;
-      font-size:16px;
-    }
-    button{
-      width:100%;
-      padding:14px;
-      font-size:16px;
-      border-radius:12px;
-      border:none;
-      cursor:pointer;
-      font-weight:600;
-    }
-    #generate{
-      background:#0d6efd;
-      color:#fff;
-    }
-    .secondary{
-      background:#555;
-      color:#fff;
-      margin-top:10px;
-    }
-    .error{
-      margin-top:14px;
-      color:#c00;
-      font-weight:600;
-      text-align:center;
-    }
-    .result{
-      margin-top:20px;
-      padding:14px;
-      background:#f0f3ff;
-      border-radius:10px;
-      font-size:14px;
-      word-break:break-all;
-    }
+    body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:0;background:#f6f7fb}
+    .wrap{max-width:980px;margin:40px auto;padding:0 16px}
+    h1{margin:0 0 18px;font-size:34px;text-align:center}
+    .card{background:#fff;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.08);padding:18px}
+    .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+    label{display:block;font-weight:700;margin:0 0 6px}
+    select,input{width:100%;padding:10px 12px;border:1px solid #d9dce7;border-radius:10px;font-size:16px}
+    button{width:100%;padding:14px 16px;border:0;border-radius:12px;font-size:18px;font-weight:800;cursor:pointer}
+    .btn{background:#1677ff;color:#fff}
+    .btn2{background:#00aa3c;color:#fff}
+    .btn3{background:#7a2cff;color:#fff}
+    .row{margin-top:12px}
+    .msg{margin-top:10px;color:#b00020;font-weight:700}
+    .ok{color:#0a7a2a}
+    .links{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+    .box{border:1px solid #e6e8f2;border-radius:14px;padding:12px;background:#fbfbff}
+    .box h3{margin:0 0 8px}
+    .small{font-size:12px;color:#444;word-break:break-all}
+    .qr{display:flex;gap:12px;align-items:center;margin-top:8px}
+    .qr img{width:160px;height:160px;border:1px solid #e6e8f2;border-radius:10px;background:#fff}
+    .actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+    .hidden{display:none}
   </style>
 </head>
-
 <body>
+  <div class="wrap">
+    <h1>Schichtkalender (ICS) – Web Generator</h1>
 
-<h1>Schichtkalender (ICS) – Web Generator</h1>
+    <div class="card">
+      <div class="grid">
+        <div>
+          <label>Fiber</label>
+          <select id="fiber">
+            <option value="2">Fiber 2</option>
+            <option value="1">Fiber 1</option>
+          </select>
+        </div>
 
-<div class="box">
+        <div>
+          <label>Team</label>
+          <select id="team">
+            <option value="1">Team 1 (P1)</option>
+            <option value="2">Team 2 (P2)</option>
+            <option value="3">Team 3 (P3)</option>
+            <option value="4">Team 4 (P4)</option>
+          </select>
+        </div>
 
-  <label for="fiber">Fiber</label>
-  <select id="fiber">
-    <option value="1">Fiber 1</option>
-    <option value="2">Fiber 2</option>
-  </select>
+        <div>
+          <label>Jahr</label>
+          <select id="year"></select>
+        </div>
+      </div>
 
-  <label for="team">Team</label>
-  <select id="team">
-    <option value="1">Team 1 (P1)</option>
-    <option value="2">Team 2 (P2)</option>
-    <option value="3">Team 3 (P3)</option>
-    <option value="4">Team 4 (P4)</option>
-  </select>
+      <div class="row">
+        <button class="btn" id="btnGen">Generieren</button>
+        <div class="msg" id="msg"></div>
+      </div>
 
-  <label for="year">Jahr</label>
-  <input id="year" type="number">
+      <div id="result" class="hidden">
+        <div class="links">
+          <div class="box">
+            <h3>iOS (Abo via webcal)</h3>
+            <div class="qr">
+              <img id="qrIos" alt="QR iOS" />
+              <div>
+                <div><a id="linkIos" target="_blank" rel="noopener">webcal Link öffnen</a></div>
+                <div class="small" id="txtIos"></div>
+              </div>
+            </div>
+          </div>
 
-  <button id="generate">Generieren (ICS)</button>
+          <div class="box">
+            <h3>Android / Download</h3>
+            <div class="qr">
+              <img id="qrAndroid" alt="QR Android" />
+              <div>
+                <div><a id="linkAndroid" target="_blank" rel="noopener">ICS öffnen / laden</a></div>
+                <div class="small" id="txtAndroid"></div>
+              </div>
+            </div>
+          </div>
+        </div>
 
-  <button id="printv1" class="secondary">🖨 Druckversion V1 (untereinander)</button>
-  <button id="printv2" class="secondary">🖨 Druckversion V2 (nebeneinander)</button>
+        <div class="actions">
+          <button class="btn2" id="btnPrintV1">Druckdatei V1 (Monate untereinander)</button>
+          <button class="btn3" id="btnPrintV2">Druckdatei V2 (Monate nebeneinander)</button>
+        </div>
+      </div>
 
-  <div id="error" class="error"></div>
-  <div id="result" class="result" style="display:none"></div>
-
-</div>
+      <div class="small" style="margin-top:10px;color:#666">
+        Hinweis: Feiertage (RLP) werden im Drucklayout rot markiert. Ferien (blau) folgt, sobald du IsFerien() sendest.
+      </div>
+    </div>
+  </div>
 
 <script>
-  const yearInput = document.getElementById("year");
-  const nowYear = new Date().getFullYear();
-  yearInput.min = nowYear;
-  yearInput.max = nowYear + 4;
-  yearInput.value = nowYear;
-
-  const errorBox  = document.getElementById("error");
-  const resultBox = document.getElementById("result");
-
-  function params() {
-    const fiber = document.getElementById("fiber").value;
-    const team  = document.getElementById("team").value;
-    const year  = document.getElementById("year").value;
-    return { fiber, team, year };
+  // ---- Year Dropdown: absteigend, 2026..(current+4) ----
+  const yearSel = document.getElementById("year");
+  const nowY = new Date().getFullYear();
+  const minYear = 2026;
+  const maxYear = nowY + 4;
+  for (let y = maxYear; y >= minYear; y--) {
+    const opt = document.createElement("option");
+    opt.value = String(y);
+    opt.textContent = String(y);
+    yearSel.appendChild(opt);
   }
+  yearSel.value = String(nowY);
 
-  document.getElementById("generate").addEventListener("click", async () => {
-    errorBox.textContent = "";
-    resultBox.style.display = "none";
+  const msg = document.getElementById("msg");
+  const result = document.getElementById("result");
 
-    const { fiber, team, year } = params();
+  const fiberEl = document.getElementById("fiber");
+  const teamEl = document.getElementById("team");
 
-    const res = await fetch(`/generate?fiber=${fiber}&team=${team}&year=${year}`);
-    const text = await res.text();
+  const qrIos = document.getElementById("qrIos");
+  const qrAndroid = document.getElementById("qrAndroid");
+  const linkIos = document.getElementById("linkIos");
+  const linkAndroid = document.getElementById("linkAndroid");
+  const txtIos = document.getElementById("txtIos");
+  const txtAndroid = document.getElementById("txtAndroid");
 
-    if (!res.ok) {
-      errorBox.textContent = text;
+  let lastParams = null;
+
+  document.getElementById("btnGen").addEventListener("click", async () => {
+    msg.textContent = "";
+    msg.classList.remove("ok");
+    result.classList.add("hidden");
+
+    const fiber = fiberEl.value;
+    const team = teamEl.value;
+    const year = yearSel.value;
+
+    // Client check (wie bei dir in Excel)
+    if (Number(year) < minYear || Number(year) > maxYear) {
+      msg.textContent = `Fehler: year muss ${minYear} bis ${maxYear} sein`;
       return;
     }
 
-    const data = JSON.parse(text);
+    // Prüfe ob /ics funktioniert (damit wir direkt Fehler zeigen)
+    const icsUrl = `${location.origin}/ics?fiber=${encodeURIComponent(fiber)}&team=${encodeURIComponent(team)}&year=${encodeURIComponent(year)}`;
+    try {
+      const r = await fetch(icsUrl, { method: "GET" });
+      if (!r.ok) {
+        const t = await r.text();
+        msg.textContent = "Fehler: " + t;
+        return;
+      }
+    } catch (e) {
+      msg.textContent = "Fehler: /ics nicht erreichbar";
+      return;
+    }
 
-    resultBox.style.display = "block";
-    resultBox.innerHTML = `
-      <strong>ICS:</strong><br>
-      <a href="${data.ics}" target="_blank">${data.ics}</a><br><br>
-      <strong>iOS / Apple Kalender:</strong><br>
-      <code>${data.webcal}</code>
+    // Links
+    const host = location.host;
+    const iosUrl = `webcal://${host}/ics?fiber=${encodeURIComponent(fiber)}&team=${encodeURIComponent(team)}&year=${encodeURIComponent(year)}`;
+    const androidUrl = icsUrl;
+
+    // QR Images (externer Dienst)
+    qrIos.src = qrServer(iosUrl);
+    qrAndroid.src = qrServer(androidUrl);
+
+    linkIos.href = iosUrl;
+    linkAndroid.href = androidUrl;
+
+    txtIos.textContent = iosUrl;
+    txtAndroid.textContent = androidUrl;
+
+    lastParams = { fiber, team, year };
+    result.classList.remove("hidden");
+    msg.textContent = "OK – generiert!";
+    msg.classList.add("ok");
+  });
+
+  function qrServer(data) {
+    return "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=" + encodeURIComponent(data);
+  }
+
+  // ==========================================================
+  //  Druck: V1 + V2 (clientseitig) – öffnet echtes Druck-HTML
+  // ==========================================================
+  document.getElementById("btnPrintV1").addEventListener("click", () => {
+    if (!lastParams) return;
+    openPrintWindow(lastParams, 1);
+  });
+
+  document.getElementById("btnPrintV2").addEventListener("click", () => {
+    if (!lastParams) return;
+    openPrintWindow(lastParams, 2);
+  });
+
+  function openPrintWindow({ fiber, team, year }, variant) {
+    const y = Number(year);
+    const title = `Schichtplan ${y} P${team} (Fiber ${fiber}) – PRO V${variant}`;
+
+    const html = buildPrintHTML({ fiber, team, year: y, variant });
+
+    const w = window.open("", "_blank");
+    if (!w) {
+      alert("Popup blockiert. Bitte Popups erlauben.");
+      return;
+    }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+
+    // warten bis DOM geladen
+    w.onload = () => {
+      w.focus();
+      w.print();
+    };
+  }
+
+  // ==========================================================
+  //  Excel-ähnliche Logik
+  // ==========================================================
+  function getRhythm(fiber, team) {
+    if (fiber === "2") {
+      switch (team) {
+        case "1": return ["Früh","Spät","Spät","Nacht","Nacht","Nacht","Frei","Frei","Früh","Früh","Spät","Spät","Spät","Nacht","Nacht","Frei","Frei","Früh","Früh","Früh","Spät","Spät","Nacht","Nacht","Frei","Frei","Frei","Früh"];
+        case "2": return ["Spät","Nacht","Nacht","Frei","Frei","Frei","Früh","Früh","Spät","Spät","Nacht","Nacht","Nacht","Frei","Frei","Früh","Früh","Spät","Spät","Spät","Nacht","Nacht","Frei","Frei","Früh","Früh","Früh","Spät"];
+        case "3": return ["Nacht","Frei","Frei","Früh","Früh","Früh","Spät","Spät","Nacht","Nacht","Frei","Frei","Frei","Früh","Früh","Spät","Spät","Nacht","Nacht","Nacht","Frei","Frei","Früh","Früh","Spät","Spät","Spät","Nacht"];
+        case "4": return ["Frei","Früh","Früh","Spät","Spät","Spät","Nacht","Nacht","Frei","Frei","Früh","Früh","Früh","Spät","Spät","Nacht","Nacht","Frei","Frei","Frei","Früh","Früh","Spät","Spät","Nacht","Nacht","Nacht","Frei"];
+      }
+    } else {
+      switch (team) {
+        case "1": return ["Spät","Nacht","Nacht","Nacht","Frei","Frei","Früh","Früh","Spät","Spät","Spät","Nacht","Nacht","Frei","Frei","Früh","Früh","Früh","Spät","Spät","Nacht","Nacht","Frei","Frei","Frei","Früh","Früh","Spät"];
+        case "2": return ["Nacht","Frei","Frei","Frei","Früh","Früh","Spät","Spät","Nacht","Nacht","Nacht","Frei","Frei","Früh","Früh","Spät","Spät","Spät","Nacht","Nacht","Frei","Frei","Früh","Früh","Früh","Spät","Spät","Nacht"];
+        case "3": return ["Frei","Früh","Früh","Früh","Spät","Spät","Nacht","Nacht","Frei","Frei","Frei","Früh","Früh","Spät","Spät","Nacht","Nacht","Nacht","Frei","Frei","Früh","Früh","Spät","Spät","Spät","Nacht","Nacht","Frei"];
+        case "4": return ["Früh","Spät","Spät","Spät","Nacht","Nacht","Frei","Frei","Früh","Früh","Früh","Spät","Spät","Nacht","Nacht","Frei","Frei","Frei","Früh","Früh","Spät","Spät","Nacht","Nacht","Nacht","Frei","Frei","Früh"];
+      }
+    }
+    return null;
+  }
+
+  function shiftForDateUTC({ fiber, team, date }) {
+    const rhythm = getRhythm(fiber, team);
+    if (!rhythm) return "Frei";
+
+    const ref = new Date(Date.UTC(2026, 0, 1));
+    const dUtc = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+    const daysDiff = Math.floor((dUtc - ref) / 86400000);
+    let pos = ((daysDiff % 28) + 28) % 28;
+    return rhythm[pos];
+  }
+
+  // Feiertage (RLP) – 1:1 aus VBA
+  function easterDate(year) {
+    const a = year % 19;
+    const b = Math.floor(year / 100);
+    const c = year % 100;
+    const d = Math.floor(b / 4);
+    const e = b % 4;
+    const f = Math.floor((b + 8) / 25);
+    const g = Math.floor((b - f + 1) / 3);
+    const h = (19 * a + b - d - g + 15) % 30;
+    const i = Math.floor(c / 4);
+    const k = c % 4;
+    const L = (32 + 2 * e + 2 * i - h - k) % 7;
+    const m = Math.floor((a + 11 * h + 22 * L) / 451);
+    const month = Math.floor((h + L - 7 * m + 114) / 31);
+    const day = ((h + L - 7 * m + 114) % 31) + 1;
+    return new Date(Date.UTC(year, month - 1, day));
+  }
+
+  function addDaysUTC(d, days) {
+    const x = new Date(d.getTime());
+    x.setUTCDate(x.getUTCDate() + days);
+    return x;
+  }
+
+  function ymdUTC(d) {
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth()+1).padStart(2,"0");
+    const da = String(d.getUTCDate()).padStart(2,"0");
+    return `${y}-${m}-${da}`;
+  }
+
+  function isHolidayRLP(d) {
+    const y = d.getUTCFullYear();
+    const easter = easterDate(y);
+
+    const fixed = new Set([`${y}-01-01`,`${y}-05-01`,`${y}-10-03`,`${y}-12-25`,`${y}-12-26`]);
+    if (fixed.has(ymdUTC(d))) return true;
+
+    const movable = new Set([
+      ymdUTC(addDaysUTC(easter, -2)),
+      ymdUTC(addDaysUTC(easter, 1)),
+      ymdUTC(addDaysUTC(easter, 39)),
+      ymdUTC(addDaysUTC(easter, 49)),
+      ymdUTC(addDaysUTC(easter, 50)),
+      ymdUTC(addDaysUTC(easter, 60)),
+    ]);
+    return movable.has(ymdUTC(d));
+  }
+
+  // Ferien: kommt 1:1 sobald du IsFerien() schickst
+  function isVacationRLP(/*dateUtc*/) {
+    return false;
+  }
+
+  function shiftLetter(sc) {
+    const s = (sc||"").toLowerCase();
+    if (s === "früh") return "F";
+    if (s === "spät") return "S";
+    if (s === "nacht") return "N";
+    return "";
+  }
+
+  function buildPrintHTML({ fiber, team, year, variant }) {
+    const teamLabel = ["","P I","P II","P III","P IV"][Number(team)] || ("P " + team);
+
+    const tel = (fiber === "1")
+      ? { b:"Büro: 06542/802277", m:"Mobil: 06542/802508", t:"Teamleiter: 06542/802594" }
+      : { b:"Büro: 06542/802273", m:"Mobil: 06542/802505", t:"Teamleiter: 06542/802530" };
+
+    const css = `
+      <style>
+        @page{size:A4 landscape;margin:12mm;}
+        body{font-family:Arial,sans-serif;color:#000}
+        .header{display:grid;grid-template-columns:1fr 2fr 1fr;gap:10px;align-items:stretch;margin-bottom:10px}
+        .box{border:1px solid #000;padding:8px}
+        .center{display:flex;align-items:center;justify-content:center;text-align:center}
+        .title{font-size:22px;font-weight:700;background:#c6e0b4}
+        .printed{font-size:12px;font-style:italic}
+        table{border-collapse:collapse;width:100%}
+        td,th{border:1px solid #000;text-align:center;vertical-align:middle}
+        .mname{font-weight:700}
+        .holiday{background:#ffc8c8}
+        .vac{background:#c8dcff}
+        .F{background:#ffff00}
+        .S{background:#ff0000}
+        .N{background:#00b0f0}
+        .legend{margin-top:10px;width:420px}
+        .legend td{font-weight:700}
+        .small{font-size:11px}
+        .tight td{padding:3px}
+        .v2 td{padding:5px}
+        .sepR{border-right:3px solid #000!important}
+        .outer{border:3px solid #000}
+      </style>
     `;
-  });
 
-  document.getElementById("printv1").addEventListener("click", () => {
-    const { fiber, team, year } = params();
-    window.open(`/print-v1.html?fiber=${fiber}&team=${team}&year=${year}`, "_blank");
-  });
+    const header = `
+      <div class="header">
+        <div class="box center printed">Printed by: Johannes Trippen©</div>
+        <div class="box center title">Schichtplan ${year} ${teamLabel}</div>
+        <div class="box center small">${tel.b}<br>${tel.m}<br>${tel.t}</div>
+      </div>
+    `;
 
-  document.getElementById("printv2").addEventListener("click", () => {
-    const { fiber, team, year } = params();
-    window.open(`/print-v2.html?fiber=${fiber}&team=${team}&year=${year}`, "_blank");
-  });
+    const months = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+
+    // Build shift map for year
+    const shiftMap = new Map(); // ymd -> letter
+    for (let m=0; m<12; m++) {
+      const daysInMonth = new Date(Date.UTC(year, m+1, 0)).getUTCDate();
+      for (let day=1; day<=daysInMonth; day++) {
+        const d = new Date(Date.UTC(year, m, day));
+        const sc = shiftForDateUTC({ fiber, team, date: d });
+        shiftMap.set(ymdUTC(d), shiftLetter(sc));
+      }
+    }
+
+    let body = "";
+
+    if (variant === 1) {
+      // PRO V1: Monate untereinander – 3 Zeilen pro Monat (wie Excel)
+      body += `<table class="outer tight">`;
+      for (let m=0; m<12; m++) {
+        const daysInMonth = new Date(Date.UTC(year, m+1, 0)).getUTCDate();
+        body += `<tr>`;
+        body += `<td class="mname" rowspan="3" style="width:120px">${months[m]}</td>`;
+        // weekday row
+        for (let day=1; day<=31; day++) {
+          if (day>daysInMonth) {
+            body += `<td></td>`;
+          } else {
+            const d = new Date(Date.UTC(year, m, day));
+            const wd = d.toLocaleDateString("de-DE",{weekday:"short"}).slice(0,2);
+            body += `<td class="small">${wd}</td>`;
+          }
+        }
+        body += `</tr>`;
+
+        // numbers row with holiday/vac
+        body += `<tr>`;
+        for (let day=1; day<=31; day++) {
+          if (day>daysInMonth) {
+            body += `<td></td>`;
+          } else {
+            const d = new Date(Date.UTC(year, m, day));
+            const cls = isHolidayRLP(d) ? "holiday" : (isVacationRLP(d) ? "vac" : "");
+            body += `<td class="${cls}"><b>${day}</b></td>`;
+          }
+        }
+        body += `</tr>`;
+
+        // shift row
+        body += `<tr>`;
+        for (let day=1; day<=31; day++) {
+          if (day>daysInMonth) {
+            body += `<td></td>`;
+          } else {
+            const d = new Date(Date.UTC(year, m, day));
+            const letter = shiftMap.get(ymdUTC(d)) || "";
+            body += `<td class="${letter}"><b>${letter}</b></td>`;
+          }
+        }
+        body += `</tr>`;
+      }
+      body += `</table>`;
+    } else {
+      // PRO V2: Monate nebeneinander (12 Blöcke à 3 Spalten), 31 Zeilen
+      body += `<table class="outer v2">`;
+      // Month headers
+      body += `<tr>`;
+      for (let m=0; m<12; m++) {
+        body += `<th colspan="3" style="background:#c6e0b4">${months[m]}</th>`;
+      }
+      body += `</tr>`;
+
+      // rows 1..31
+      for (let day=1; day<=31; day++) {
+        body += `<tr>`;
+        for (let m=0; m<12; m++) {
+          const daysInMonth = new Date(Date.UTC(year, m+1, 0)).getUTCDate();
+          if (day>daysInMonth) {
+            body += `<td></td><td></td><td class="sepR"></td>`;
+            continue;
+          }
+          const d = new Date(Date.UTC(year, m, day));
+          const isH = isHolidayRLP(d);
+          const isV = isVacationRLP(d);
+          const letter = shiftMap.get(ymdUTC(d)) || "";
+          const wd = d.toLocaleDateString("de-DE",{weekday:"long"});
+
+          body += `<td class="${isH ? "holiday" : (isV ? "vac" : "")}"></td>`;
+          body += `<td><b>${day}</b></td>`;
+          body += `<td class="sepR ${letter}"><b>${wd}</b></td>`;
+        }
+        body += `</tr>`;
+      }
+      body += `</table>`;
+    }
+
+    const legend = `
+      <table class="legend outer">
+        <tr><td colspan="6">Legende</td></tr>
+        <tr><td colspan="3" class="vac">Ferien</td><td colspan="3" class="F">Früh</td></tr>
+        <tr><td colspan="3" class="holiday">Feiertag</td><td colspan="3" class="S">Spät</td></tr>
+        <tr><td colspan="3"></td><td colspan="3" class="N">Nacht</td></tr>
+      </table>
+    `;
+
+    return `
+      <!doctype html>
+      <html lang="de">
+      <head>
+        <meta charset="utf-8" />
+        <title>Schichtplan ${year} - Druck</title>
+        ${css}
+      </head>
+      <body>
+        ${header}
+        ${body}
+        ${legend}
+      </body>
+      </html>
+    `;
+  }
 </script>
-
 </body>
 </html>
