@@ -36,6 +36,7 @@ export async function onRequestGet({ request }) {
 
   const tel = (fiber === 1 ? TEL.fiber1 : TEL.fiber2);
   const title = `Schichtplan ${year} – Fiber ${fiber} – Team P${team} (${teamLabel(team)})`;
+  const printTitle = `${title} (V1)`;
 
   // Like Excel "V1": 12 months stacked; each month 3 rows: Wochentag, Tag (colored holiday/vac), Schicht (colored F/S/N)
   let monthsHtml = "";
@@ -44,9 +45,9 @@ export async function onRequestGet({ request }) {
     const lastDay = new Date(Date.UTC(year, m+1, 0)).getUTCDate();
 
     // Build rows
-    let rowWeek = `<tr><th class="mlabel" rowspan="3">${safeHtml(monthName)}</th><th class="rlabel">Wochentag</th>`;
-    let rowDay  = `<tr><th class="rlabel">Tag</th>`;
-    let rowShift= `<tr><th class="rlabel">Schicht</th>`;
+    let rowWeek = `<tr><th class="mlabel" rowspan="3">${safeHtml(monthName)}</th>`;
+    let rowDay  = `<tr>`;
+    let rowShift= `<tr>`;
 
     for (let d = 1; d <= 31; d++) {
       if (d > lastDay) {
@@ -149,6 +150,7 @@ export async function onRequestGet({ request }) {
 </div>
 
 <script>
+  try{ document.title = ${JSON.stringify(printTitle)}; }catch(e){}
   setTimeout(() => { try{ window.print(); }catch(e){} }, 250);
 </script>
 </body>

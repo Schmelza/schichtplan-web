@@ -38,6 +38,7 @@ export async function onRequestGet({ request }) {
 
   const tel = (fiber === 1 ? TEL.fiber1 : TEL.fiber2);
   const title = `Schichtplan ${year} – Fiber ${fiber} – Team P${team} (${teamLabel(team)})`;
+  const printTitle = `${title} (V2)`;
 
   // Build table: 12 months horizontally, each month 2 columns (Tag + Wochentag/Schicht)
   // Like your Excel "V2": Mark (holiday/vacation) | Day number | Day name + shift color
@@ -65,7 +66,7 @@ export async function onRequestGet({ request }) {
 
       rowTds += `<td class="mark" style="${markStyle}"></td>`;
       rowTds += `<td class="day"><b>${dayNum}</b></td>`;
-      rowTds += `<td class="txt" style="${txtStyle}">${safeHtml(dayName)}${letter ? ` <span class="sletter">${letter}</span>` : ""}</td>`;
+      rowTds += `<td class="txt" style="${txtStyle}">${safeHtml(dayName)}</td>`;
     }
     bodyRows += `<tr>${rowTds}</tr>`;
   }
@@ -122,7 +123,7 @@ export async function onRequestGet({ request }) {
     /* Tighten table area */
     .tablewrap{margin-top:4px; padding:4px;}
     table{table-layout:fixed}
-    th,td{font-size:8px; padding:0 1px; line-height:1.0}
+    th,td{font-size:9px; padding:0 2px; line-height:1.05}
 
     /* Prevent weekday text from wrapping (wrap increases row height) */
     td.txt{white-space:nowrap; overflow:hidden; text-overflow:clip}
@@ -161,6 +162,7 @@ export async function onRequestGet({ request }) {
 
 <script>
   // Auto-open print dialog
+  try{ document.title = ${JSON.stringify(printTitle)}; }catch(e){}
   setTimeout(() => { try{ window.print(); }catch(e){} }, 250);
 </script>
 </body>
