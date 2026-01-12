@@ -1,108 +1,76 @@
-// Cloudflare Pages Function: /ics?fiber=1|2&team=1..4&year=2026..
-// Returns the .ics file directly (Content-Type: text/calendar).
+export async function onRequest(context) {
+  const url = new URL(context.request.url);
 
-function rhythmFiber2(team) {
-  switch (team) {
-    case 1: return ["Früh","Spät","Spät","Nacht","Nacht","Nacht","Frei","Frei","Früh","Früh","Spät","Spät","Spät","Nacht","Nacht","Frei","Frei","Früh","Früh","Früh","Spät","Spät","Nacht","Nacht","Frei","Frei","Frei","Früh"];
-    case 2: return ["Spät","Nacht","Nacht","Frei","Frei","Frei","Früh","Früh","Spät","Spät","Nacht","Nacht","Nacht","Frei","Frei","Früh","Früh","Spät","Spät","Spät","Nacht","Nacht","Frei","Frei","Früh","Früh","Früh","Spät"];
-    case 3: return ["Nacht","Frei","Frei","Früh","Früh","Früh","Spät","Spät","Nacht","Nacht","Frei","Frei","Frei","Früh","Früh","Spät","Spät","Nacht","Nacht","Nacht","Frei","Frei","Früh","Früh","Spät","Spät","Spät","Nacht"];
-    case 4: return ["Frei","Früh","Früh","Spät","Spät","Spät","Nacht","Nacht","Frei","Frei","Früh","Früh","Früh","Spät","Spät","Nacht","Nacht","Frei","Frei","Frei","Früh","Früh","Spät","Spät","Nacht","Nacht","Nacht","Frei"];
-    default: throw new Error("Team muss 1-4 sein");
+  const fiber = Number(url.searchParams.get("fiber"));
+  const team  = Number(url.searchParams.get("team"));
+  const year  = Number(url.searchParams.get("year"));
+
+  // ---------- VALIDIERUNG ----------
+  if (!Number.isInteger(fiber) || !Number.isInteger(team) || !Number.isInteger(year)) {
+    return new Response("fiber, team und year müssen Zahlen sein", { status: 400 });
   }
-}
 
-function rhythmFiber1(team) {
-  switch (team) {
-    case 1: return ["Spät","Nacht","Nacht","Nacht","Frei","Frei","Früh","Früh","Spät","Spät","Spät","Nacht","Nacht","Frei","Frei","Früh","Früh","Früh","Spät","Spät","Nacht","Nacht","Frei","Frei","Frei","Früh","Früh","Spät"];
-    case 2: return ["Nacht","Frei","Frei","Frei","Früh","Früh","Spät","Spät","Nacht","Nacht","Nacht","Frei","Frei","Früh","Früh","Spät","Spät","Spät","Nacht","Nacht","Frei","Frei","Früh","Früh","Früh","Spät","Spät","Nacht"];
-    case 3: return ["Frei","Früh","Früh","Früh","Spät","Spät","Nacht","Nacht","Frei","Frei","Frei","Früh","Früh","Spät","Spät","Nacht","Nacht","Nacht","Frei","Frei","Früh","Früh","Spät","Spät","Spät","Nacht","Nacht","Frei"];
-    case 4: return ["Früh","Spät","Spät","Spät","Nacht","Nacht","Frei","Frei","Früh","Früh","Früh","Spät","Spät","Nacht","Nacht","Frei","Frei","Frei","Früh","Früh","Spät","Spät","Nacht","Nacht","Nacht","Frei","Frei","Früh"];
-    default: throw new Error("Team muss 1-4 sein");
+  const nowYear = new Date().getFullYear();
+  const minYear = nowYear;
+  const maxYear = nowYear + 4;
+
+  if (year < minYear || year > maxYear) {
+    return new Response(
+      `Jahr nur erlaubt von ${minYear} bis ${maxYear}`,
+      { status: 400 }
+    );
   }
-}
 
-function pad2(n){ return String(n).padStart(2,"0"); }
-function fmtLocal(dt){
-  return `${dt.getFullYear()}${pad2(dt.getMonth()+1)}${pad2(dt.getDate())}T${pad2(dt.getHours())}${pad2(dt.getMinutes())}${pad2(dt.getSeconds())}`;
-}
-function fmtUTCStamp(){
-  const d = new Date();
-  return `${d.getUTCFullYear()}${pad2(d.getUTCMonth()+1)}${pad2(d.getUTCDate())}T${pad2(d.getUTCHours())}${pad2(d.getUTCMinutes())}${pad2(d.getUTCSeconds())}Z`;
-}
+  // ---------- ICS GENERIEREN ----------
+  function pad(n) {
+    return String(n).padStart(2, "0");
+  }
 
-function buildIcs(fiber, team, year){
-  if (year < 2026) throw new Error("Jahre vor 2026 nicht erlaubt");
+  function formatDate(d) {
+    return (
+      d.getUTCFullYear() +
+      pad(d.getUTCMonth() + 1) +
+      pad(d.getUTCDate()) +
+      "T000000Z"
+    );
+  }
 
-  const start = new Date(year,0,1);
-  const end = new Date(year,11,31);
-  const rhythm = (fiber===2) ? rhythmFiber2(team) : rhythmFiber1(team);
+  let ics = "";
+  ics += "BEGIN:VCALENDAR\r\n";
+  ics += "VERSION:2.0\r\n";
+  ics += "PRODID:-//Schichtplan//DE\r\n";
+  ics += "CALSCALE:GREGORIAN\r\n";
 
-  const ref = new Date(2026,0,1);
-  const daysDiff = Math.floor((start - ref) / 86400000);
-  let pos = ((daysDiff % 28) + 28) % 28;
+  // Beispiel-Schicht-Rotation (anpassbar)
+  const shifts = ["Frühschicht", "Spätschicht", "Nachtschicht"];
+  let shiftIndex = 0;
 
-  const lines = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Schichtplan Export//DE"];
+  let date = new Date(Date.UTC(year, 0, 1));
+  const end = new Date(Date.UTC(year + 1, 0, 1));
 
-  for (let d = new Date(start); d <= end; d.setDate(d.getDate()+1), pos++){
-    const sc = String(rhythm[pos % 28]).toLowerCase();
-    if (sc === "frei") continue;
+  while (date < end) {
+    const start = new Date(date);
+    const endDate = new Date(date);
+    endDate.setUTCDate(endDate.getUTCDate() + 1);
 
-    let dtStart, dtEnd, summary;
-    if (sc === "früh"){
-      dtStart = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 6,0,0);
-      dtEnd   = new Date(d.getFullYear(), d.getMonth(), d.getDate(),14,0,0);
-      summary = `Frühschicht P${team}`;
-    } else if (sc === "spät"){
-      dtStart = new Date(d.getFullYear(), d.getMonth(), d.getDate(),14,0,0);
-      dtEnd   = new Date(d.getFullYear(), d.getMonth(), d.getDate(),22,0,0);
-      summary = `Spätschicht P${team}`;
-    } else if (sc === "nacht"){
-      dtStart = new Date(d.getFullYear(), d.getMonth(), d.getDate(),22,0,0);
-      dtEnd   = new Date(dtStart.getTime() + 8*3600*1000);
-      summary = `Nachtschicht P${team}`;
-    } else {
-      continue;
+    ics += "BEGIN:VEVENT\r\n";
+    ics += `UID:${year}-${fiber}-${team}-${date.getTime()}@schichtplan\r\n`;
+    ics += `DTSTAMP:${formatDate(new Date())}\r\n`;
+    ics += `DTSTART:${formatDate(start)}\r\n`;
+    ics += `DTEND:${formatDate(endDate)}\r\n`;
+    ics += `SUMMARY:${shifts[shiftIndex]} (Fiber ${fiber}, Team ${team})\r\n`;
+    ics += "END:VEVENT\r\n";
+
+    shiftIndex = (shiftIndex + 1) % shifts.length;
+    date.setUTCDate(date.getUTCDate() + 1);
+  }
+
+  ics += "END:VCALENDAR\r\n";
+
+  return new Response(ics, {
+    headers: {
+      "Content-Type": "text/calendar; charset=utf-8",
+      "Content-Disposition": `attachment; filename="schichtplan_${fiber}_${team}_${year}.ics"`
     }
-
-    const uid = `${Date.now()}-${d.toISOString().slice(0,10)}-${fiber}-${team}`;
-
-    lines.push("BEGIN:VEVENT");
-    lines.push(`UID:${uid}`);
-    lines.push(`DTSTAMP:${fmtUTCStamp()}`);
-    lines.push(`DTSTART:${fmtLocal(dtStart)}`);
-    lines.push(`DTEND:${fmtLocal(dtEnd)}`);
-    lines.push(`SUMMARY:${summary}`);
-    lines.push("END:VEVENT");
-  }
-
-  lines.push("END:VCALENDAR");
-  return lines.join("\r\n") + "\r\n";
-}
-
-export async function onRequestGet(context) {
-  try {
-    const url = new URL(context.request.url);
-    const fiber = Number(url.searchParams.get("fiber"));
-    const team  = Number(url.searchParams.get("team"));
-    const year  = Number(url.searchParams.get("year"));
-
-    const maxYear = (new Date().getFullYear()) + 4;
-
-    if (![1,2].includes(fiber)) throw new Error("fiber muss 1 oder 2 sein");
-    if (!(team>=1 && team<=4)) throw new Error("team muss 1-4 sein");
-    if (!(year>=2026 && year<=maxYear)) throw new Error(`year muss 2026 bis ${maxYear} sein`);
-
-    const ics = buildIcs(fiber, team, year);
-    const filename = `Fiber${fiber}_P${team}_${year}.ics`;
-
-    return new Response(ics, {
-      headers: {
-        "content-type": "text/calendar; charset=utf-8",
-        "content-disposition": `inline; filename="${filename}"`,
-        "cache-control": "public, max-age=300" // 5min cache to reduce load
-      }
-    });
-  } catch (e) {
-    return new Response(String(e.message || e), { status: 400, headers: { "content-type": "text/plain; charset=utf-8" } });
-  }
+  });
 }
