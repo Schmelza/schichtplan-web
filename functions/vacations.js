@@ -1,94 +1,91 @@
-export async function onRequest({ request }) {
-  const url = new URL(request.url);
-  const year = Number(url.searchParams.get("year"));
+// functions/vacations.js
+// Quelle wie VBA:
+// https://www.feiertage-deutschland.de/kalender-download/ics/schulferien-rheinland-pfalz.ics
+const FERIEN_URL = "https://www.feiertage-deutschland.de/kalender-download/ics/schulferien-rheinland-pfalz.ics";
 
-  if (!Number.isInteger(year)) {
-    return new Response(JSON.stringify({ detail: "year muss eine Zahl sein" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" }
-    });
+let cacheSet = null;   // Set<number> of YYYYMMDD int
+let cacheTs = 0;
+
+function ymdInt(d){
+  return d.getFullYear() * 10000 + (d.getMonth()+1) * 100 + d.getDate();
+}
+
+function parseICSDate(line){
+  // z.B. DTSTART;VALUE=DATE:20260701
+  const idx = line.indexOf(":");
+  if (idx === -1) return null;
+  const s = line.slice(idx+1).trim().slice(0,8);
+  if (s.length !== 8) return null;
+  const y = parseInt(s.slice(0,4),10);
+  const m = parseInt(s.slice(4,6),10);
+  const d = parseInt(s.slice(6,8),10);
+  if (!y || !m || !d) return null;
+  return new Date(y, m-1, d);
+}
+
+async function loadFerienSet() {
+  // einfacher Cache (12h) – reicht völlig
+  const now = Date.now();
+  if (cacheSet && (now - cacheTs) < 12*60*60*1000) return cacheSet;
+
+  const r = await fetch(FERIEN_URL, { cf: { cacheTtl: 3600, cacheEverything: true } });
+  if (!r.ok) {
+    // wie VBA: bei Fehlern -> einfach "keine Ferien"
+    cacheSet = new Set();
+    cacheTs = now;
+    return cacheSet;
   }
 
-  const FERIEN_URL =
-    "https://www.feiertage-deutschland.de/kalender-download/ics/schulferien-rheinland-pfalz.ics";
+  const text = await r.text();
+  const lines = text.split(/\r?\n/);
 
-  let icsText = "";
-  try {
-    const res = await fetch(FERIEN_URL, {
-      headers: { "User-Agent": "schichtplan-web" }
-    });
-    if (!res.ok) throw new Error("ICS Download fehlgeschlagen");
-    icsText = await res.text();
-  } catch (e) {
-    // crash-sicher wie VBA -> einfach leere Ferienliste
-    return new Response(JSON.stringify({ year, dates: [], warning: "Ferien-ICS konnte nicht geladen werden" }), {
-      headers: { "Content-Type": "application/json" }
-    });
-  }
+  const set = new Set();
+  let inEvent = false;
+  let dtStart = null;
+  let dtEnd = null;
 
-  const dates = new Set();
+  for (const raw of lines) {
+    const line = raw.trim();
 
-  function getICSDateFromBlock(block, key) {
-    const idx = block.indexOf(key);
-    if (idx === -1) return null;
-
-    // Zeile holen
-    const lineStart = block.lastIndexOf("\n", idx);
-    const lineEnd = block.indexOf("\n", idx);
-    const line = block.slice(lineStart === -1 ? 0 : lineStart + 1, lineEnd === -1 ? block.length : lineEnd).trim();
-
-    const p = line.indexOf(":");
-    if (p === -1) return null;
-
-    let ds = line.slice(p + 1).trim();
-    ds = ds.slice(0, 8); // nur YYYYMMDD
-    if (ds.length !== 8) return null;
-
-    const y = Number(ds.slice(0, 4));
-    const m = Number(ds.slice(4, 6));
-    const d = Number(ds.slice(6, 8));
-    if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return null;
-
-    // UTC Datum
-    return new Date(Date.UTC(y, m - 1, d));
-  }
-
-  function isoDateUTC(dt) {
-    return dt.toISOString().slice(0, 10);
-  }
-
-  // VEVENT Blöcke parsen (wie VBA)
-  let pos = 0;
-  while (true) {
-    const bStart = icsText.indexOf("BEGIN:VEVENT", pos);
-    if (bStart === -1) break;
-
-    const bEnd = icsText.indexOf("END:VEVENT", bStart);
-    if (bEnd === -1) break;
-
-    const block = icsText.slice(bStart, bEnd);
-
-    const dtStart = getICSDateFromBlock(block, "DTSTART");
-    let dtEnd = getICSDateFromBlock(block, "DTEND");
-
-    if (dtStart) {
-      if (!dtEnd) {
-        dtEnd = new Date(dtStart);
-      } else {
-        // ICS: DTEND exklusiv -> -1 Tag (wie VBA)
-        dtEnd = new Date(dtEnd.getTime() - 24 * 60 * 60 * 1000);
+    if (line === "BEGIN:VEVENT") {
+      inEvent = true;
+      dtStart = null;
+      dtEnd = null;
+      continue;
+    }
+    if (line === "END:VEVENT") {
+      if (inEvent && dtStart) {
+        let end = dtEnd ? new Date(dtEnd) : new Date(dtStart);
+        if (dtEnd) {
+          // ICS: DTEND exklusiv -> -1 Tag
+          end.setDate(end.getDate() - 1);
+        }
+        const cur = new Date(dtStart);
+        while (cur <= end) {
+          set.add(ymdInt(cur));
+          cur.setDate(cur.getDate() + 1);
+        }
       }
-
-      // Tage eintragen
-      for (let d = new Date(dtStart); d <= dtEnd; d = new Date(d.getTime() + 24 * 60 * 60 * 1000)) {
-        if (d.getUTCFullYear() === year) dates.add(isoDateUTC(d));
-      }
+      inEvent = false;
+      continue;
     }
 
-    pos = bEnd + 9;
+    if (!inEvent) continue;
+
+    if (line.startsWith("DTSTART")) dtStart = parseICSDate(line);
+    if (line.startsWith("DTEND")) dtEnd = parseICSDate(line);
   }
 
-  return new Response(JSON.stringify({ year, dates: Array.from(dates).sort() }, null, 2), {
-    headers: { "Content-Type": "application/json" }
-  });
+  cacheSet = set;
+  cacheTs = now;
+  return cacheSet;
+}
+
+export async function isVacationRLP(date) {
+  try {
+    const set = await loadFerienSet();
+    return set.has(ymdInt(date));
+  } catch {
+    return false;
+  }
 }
