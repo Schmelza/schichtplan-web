@@ -1,68 +1,82 @@
 // functions/ics.js
-import { text, isFeiertagRLP, isFerienRLP, shiftForDate, daysInMonthUTC } from "./_lib.js";
+import { assertParams, shiftForDate, ymdThms, addDays } from "./_lib.js";
 
-function pad(n){ return String(n).padStart(2,"0"); }
-function ymd(dt){
-  return `${dt.getUTCFullYear()}${pad(dt.getUTCMonth()+1)}${pad(dt.getUTCDate())}`;
+function uid() {
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-export async function onRequestGet(context){
-  const url = new URL(context.request.url);
+function dtstamp() {
+  const d = new Date();
+  // Zulu "yyyymmddTHHmmssZ"
+  const z = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+  return `${z.getFullYear()}${String(z.getMonth()+1).padStart(2,"0")}${String(z.getDate()).padStart(2,"0")}T${String(z.getHours()).padStart(2,"0")}${String(z.getMinutes()).padStart(2,"0")}${String(z.getSeconds()).padStart(2,"0")}Z`;
+}
 
-  const fiber = Number(url.searchParams.get("fiber"));
-  const team  = Number(url.searchParams.get("team"));
-  const year  = Number(url.searchParams.get("year"));
+function eventLine(k, v){ return `${k}:${v}\r\n`; }
 
-  const nowYear = new Date().getFullYear();
-  const minYear = nowYear;
-  const maxYear = nowYear + 4;
+export async function onRequestGet({ request }) {
+  try {
+    const url = new URL(request.url);
+    const fiber = parseInt(url.searchParams.get("fiber") || "", 10);
+    const team  = parseInt(url.searchParams.get("team")  || "", 10);
+    const year  = parseInt(url.searchParams.get("year")  || "", 10);
 
-  if (![1,2].includes(fiber)) return text("fiber muss 1 oder 2 sein", 400);
-  if (![1,2].includes(team))  return text("team muss 1 oder 2 sein", 400);
-  if (!Number.isFinite(year)) return text("year fehlt", 400);
-  if (year < minYear || year > maxYear) return text(`year muss ${minYear} bis ${maxYear} sein`, 400);
+    assertParams({ fiber, team, year });
 
-  const calName = `Schichtplan ${year} Fiber ${fiber} Team P${team}`;
-  let out = "";
-  out += "BEGIN:VCALENDAR\r\n";
-  out += "VERSION:2.0\r\n";
-  out += "PRODID:-//Schichtplan Web//DE\r\n";
-  out += "CALSCALE:GREGORIAN\r\n";
-  out += `X-WR-CALNAME:${calName}\r\n`;
+    const start = new Date(year, 0, 1);
+    const end = new Date(year, 11, 31);
 
-  for(let m=0;m<12;m++){
-    const dim = daysInMonthUTC(year, m);
-    for(let d=1; d<=dim; d++){
-      const dt = new Date(Date.UTC(year, m, d));
-      const shift = shiftForDate(dt, fiber, team);
-      const fei = isFeiertagRLP(dt);
-      const fer = await isFerienRLP(dt);
+    let ics = "";
+    ics += "BEGIN:VCALENDAR\r\n";
+    ics += "VERSION:2.0\r\n";
+    ics += "PRODID:-//Schichtplan Export//DE\r\n";
 
-      // Titel wie du willst – hier: Schicht + Marker
-      let summary = shift;
-      if (fei) summary += " (Feiertag)";
-      else if (fer) summary += " (Ferien)";
+    for (let d = new Date(start); d <= end; d = addDays(d, 1)) {
+      const shift = shiftForDate({ fiber, team, date: d });
+      const s = String(shift).toLowerCase();
+      if (!s || s === "frei") continue;
 
-      const uid = `${year}${pad(m+1)}${pad(d)}-f${fiber}-p${team}@schichtplan-web`;
+      let dtStart, dtEnd, summary;
 
-      out += "BEGIN:VEVENT\r\n";
-      out += `UID:${uid}\r\n`;
-      out += `DTSTART;VALUE=DATE:${ymd(dt)}\r\n`;
-      out += `DTEND;VALUE=DATE:${ymd(new Date(dt.getTime()+86400000))}\r\n`;
-      out += `SUMMARY:${summary}\r\n`;
-      out += "END:VEVENT\r\n";
+      if (s === "früh") {
+        dtStart = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 6, 0, 0);
+        dtEnd   = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 14, 0, 0);
+        summary = `Frühschicht P${team}`;
+      } else if (s === "spät") {
+        dtStart = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 14, 0, 0);
+        dtEnd   = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 22, 0, 0);
+        summary = `Spätschicht P${team}`;
+      } else if (s === "nacht") {
+        dtStart = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 22, 0, 0);
+        // Ende +1 Tag 06:00
+        const next = addDays(d, 1);
+        dtEnd   = new Date(next.getFullYear(), next.getMonth(), next.getDate(), 6, 0, 0);
+        summary = `Nachtschicht P${team}`;
+      } else {
+        continue;
+      }
+
+      ics += "BEGIN:VEVENT\r\n";
+      ics += eventLine("UID", uid());
+      ics += eventLine("DTSTAMP", dtstamp());
+      ics += eventLine("DTSTART", ymdThms(dtStart));
+      ics += eventLine("DTEND", ymdThms(dtEnd));
+      ics += eventLine("SUMMARY", summary);
+      ics += "END:VEVENT\r\n";
     }
+
+    ics += "END:VCALENDAR\r\n";
+
+    const fileName = `Fiber${fiber}_P${team}_${year}.ics`;
+
+    return new Response(ics, {
+      headers: {
+        "content-type": "text/calendar; charset=utf-8",
+        "content-disposition": `inline; filename="${fileName}"`,
+        "cache-control": "no-store",
+      }
+    });
+  } catch (e) {
+    return new Response(String(e?.message || e), { status: 400, headers: { "content-type": "text/plain; charset=utf-8" }});
   }
-
-  out += "END:VCALENDAR\r\n";
-
-  // Download-Header
-  return new Response(out, {
-    status: 200,
-    headers: {
-      "content-type": "text/calendar; charset=utf-8",
-      "content-disposition": `attachment; filename="Schichtplan_${year}_Fiber${fiber}_P${team}.ics"`,
-      "cache-control": "no-store"
-    }
-  });
 }
