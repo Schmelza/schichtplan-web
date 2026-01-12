@@ -1,166 +1,112 @@
 // functions/_lib.js
+// 1:1 aus VBA-Rhythmus übertragen (28 Tage) + Helfer
 
-const FERIEN_URL = "https://www.feiertage-deutschland.de/kalender-download/ics/schulferien-rheinland-pfalz.ics";
+export const MIN_YEAR = 2026;
 
-export function json(data, status=200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      "content-type": "application/json; charset=utf-8",
-      "cache-control": "no-store"
-    }
-  });
+export function maxYearNowPlus4() {
+  const y = new Date().getFullYear();
+  return y + 4;
 }
 
-export function text(data, status=200, contentType="text/plain; charset=utf-8") {
-  return new Response(data, {
-    status,
-    headers: { "content-type": contentType, "cache-control": "no-store" }
-  });
+export function assertParams({ fiber, team, year }) {
+  if (![1, 2].includes(fiber)) throw new Error("fiber muss 1 oder 2 sein");
+  if (![1, 2, 3, 4].includes(team)) throw new Error("team muss 1 bis 4 sein");
+  if (!Number.isFinite(year)) throw new Error("year muss Zahl sein");
+  const maxY = maxYearNowPlus4();
+  if (year < MIN_YEAR || year > maxY) throw new Error(`year muss ${MIN_YEAR} bis ${maxY} sein`);
 }
 
-// =============== Feiertage RLP (1:1 Logik wie VBA) ===============
-function osterdatum(y){
-  // Gauß
-  const a = y % 19;
-  const b = Math.floor(y / 100);
-  const c = y % 100;
-  const d = Math.floor(b / 4);
-  const e = b % 4;
-  const f = Math.floor((b + 8) / 25);
-  const g = Math.floor((b - f + 1) / 3);
-  const h = (19*a + b - d - g + 15) % 30;
-  const i = Math.floor(c / 4);
-  const k = c % 4;
-  const L = (32 + 2*e + 2*i - h - k) % 7;
-  const m = Math.floor((a + 11*h + 22*L) / 451);
-  const month = Math.floor((h + L - 7*m + 114) / 31);
-  const day = ((h + L - 7*m + 114) % 31) + 1;
-  return new Date(Date.UTC(y, month-1, day));
+export function pad2(n) { return String(n).padStart(2, "0"); }
+
+export function ymd(d) {
+  return `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}`;
 }
 
-function sameDayUTC(a,b){
-  return a.getUTCFullYear()===b.getUTCFullYear() &&
-         a.getUTCMonth()===b.getUTCMonth() &&
-         a.getUTCDate()===b.getUTCDate();
+export function ymdThms(d) {
+  return `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}T${pad2(d.getHours())}${pad2(d.getMinutes())}${pad2(d.getSeconds())}`;
 }
 
-export function isFeiertagRLP(dateUTC){
-  const y = dateUTC.getUTCFullYear();
-  const ost = osterdatum(y);
-
-  const fixed = [
-    new Date(Date.UTC(y,0,1)),   // Neujahr
-    new Date(Date.UTC(y,4,1)),   // Tag der Arbeit
-    new Date(Date.UTC(y,9,3)),   // Deutsche Einheit
-    new Date(Date.UTC(y,11,25)), // 1. Weihnachtstag
-    new Date(Date.UTC(y,11,26)), // 2. Weihnachtstag
-  ];
-
-  for (const d of fixed) if (sameDayUTC(dateUTC, d)) return true;
-
-  // beweglich
-  const addDays = (dt, n) => new Date(dt.getTime() + n*86400000);
-  const movable = [
-    addDays(ost, -2),  // Karfreitag
-    addDays(ost, 1),   // Ostermontag
-    addDays(ost, 39),  // Christi Himmelfahrt
-    addDays(ost, 49),  // Pfingstsonntag (optional) -> du wolltest markieren
-    addDays(ost, 50),  // Pfingstmontag
-    addDays(ost, 60),  // Fronleichnam
-  ];
-  for (const d of movable) if (sameDayUTC(dateUTC, d)) return true;
-
-  return false;
+export function addDays(date, n) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + n);
+  return d;
 }
 
-// =============== Ferien RLP aus ICS (crash-sicher wie VBA) ===============
-let ferienSet = null; // Set<number> of UTC day key
-
-function dayKeyUTC(dt){
-  return Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate());
+export function isoDowShortDe(d) {
+  // VBA V1 nutzt Left$(Format(d,"ddd"),2) -> Mo, Di, Mi, ...
+  const map = ["So","Mo","Di","Mi","Do","Fr","Sa"];
+  return map[d.getDay()];
 }
 
-function parseICSDate(line){
-  // DTSTART;VALUE=DATE:20260701
-  const idx = line.indexOf(":");
-  if (idx < 0) return null;
-  const s = line.slice(idx+1).trim().slice(0,8);
-  if (!/^\d{8}$/.test(s)) return null;
-  const y = Number(s.slice(0,4));
-  const m = Number(s.slice(4,6));
-  const d = Number(s.slice(6,8));
-  return new Date(Date.UTC(y, m-1, d));
+export function fullDowDe(d) {
+  // für V2 "dddd"
+  const map = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"];
+  return map[d.getDay()];
 }
 
-async function loadFerien(){
-  try{
-    const res = await fetch(FERIEN_URL, { cf: { cacheTtl: 86400, cacheEverything: true } });
-    if(!res.ok) return null;
-    const ics = await res.text();
-
-    const set = new Set();
-    const lines = ics.split(/\r?\n/);
-
-    let inEvent = false;
-    let dtStart = null;
-    let dtEnd = null;
-
-    for(const line of lines){
-      if(line.startsWith("BEGIN:VEVENT")){
-        inEvent = true; dtStart=null; dtEnd=null;
-      } else if(line.startsWith("END:VEVENT")){
-        if(inEvent && dtStart){
-          let end = dtEnd ? new Date(dtEnd.getTime() - 86400000) : dtStart; // DTEND exklusiv -> -1 Tag
-          for(let d = new Date(dtStart); d <= end; d = new Date(d.getTime()+86400000)){
-            set.add(dayKeyUTC(d));
-          }
-        }
-        inEvent = false;
-      } else if(inEvent && line.startsWith("DTSTART")){
-        dtStart = parseICSDate(line);
-      } else if(inEvent && line.startsWith("DTEND")){
-        dtEnd = parseICSDate(line);
-      }
-    }
-
-    return set;
-  } catch {
-    return null;
+export function phoneBlockForFiber(fiber) {
+  // VBA: prefix fiber1 -> 277/508/594, else fiber2 -> 273/505/530
+  if (fiber === 1) {
+    return {
+      telB: "Büro: 06542/802277",
+      telM: "Mobil: 06542/802508",
+      telT: "Teamleiter: 06542/802594",
+    };
   }
+  return {
+    telB: "Büro: 06542/802273",
+    telM: "Mobil: 06542/802505",
+    telT: "Teamleiter: 06542/802530",
+  };
 }
 
-export async function isFerienRLP(dateUTC){
-  if(!ferienSet){
-    ferienSet = await loadFerien();
-    if(!ferienSet) ferienSet = new Set(); // crash-sicher
-  }
-  return ferienSet.has(dayKeyUTC(dateUTC));
+export function teamLabelRoman(team) {
+  return team === 1 ? "P I" : team === 2 ? "P II" : team === 3 ? "P III" : "P IV";
 }
 
-// =============== Schichtlogik (DEIN Pattern) ===============
-// Hier musst du (falls nötig) dein EXACT Excel-Pattern eintragen.
-// Ich lasse es bewusst so, dass du nur *eine* Stelle anfasst.
-const SHIFT_PATTERN = ["F","F","S","S","N","N","F","F","S","S","N","N"]; 
-// ↑ Beispiel. Wenn dein Excel eine andere Rotation hat: sag kurz das Pattern,
-// dann setz ich dir das 1:1 um.
+// ======================
+//  RHYTHMEN 1:1 VBA
+// ======================
+const FIBER2 = {
+  1: ["Früh","Spät","Spät","Nacht","Nacht","Nacht","Frei","Frei","Früh","Früh","Spät","Spät","Spät","Nacht","Nacht","Frei","Frei","Früh","Früh","Früh","Spät","Spät","Nacht","Nacht","Frei","Frei","Frei","Früh"],
+  2: ["Spät","Nacht","Nacht","Frei","Frei","Frei","Früh","Früh","Spät","Spät","Nacht","Nacht","Nacht","Frei","Frei","Früh","Früh","Spät","Spät","Spät","Nacht","Nacht","Frei","Frei","Früh","Früh","Früh","Spät"],
+  3: ["Nacht","Frei","Frei","Früh","Früh","Früh","Spät","Spät","Nacht","Nacht","Frei","Frei","Frei","Früh","Früh","Spät","Spät","Nacht","Nacht","Nacht","Frei","Frei","Früh","Früh","Spät","Spät","Spät","Nacht"],
+  4: ["Frei","Früh","Früh","Spät","Spät","Spät","Nacht","Nacht","Frei","Frei","Früh","Früh","Früh","Spät","Spät","Nacht","Nacht","Frei","Frei","Frei","Früh","Früh","Spät","Spät","Nacht","Nacht","Nacht","Frei"],
+};
 
-export function shiftForDate(dateUTC, fiber, team){
-  // Startdatum fixieren (Excel-Start). Wenn Excel z.B. 01.01.2026 = bestimmter Shift:
-  // Dann ist "anchor" dieses Datum.
-  const anchor = new Date(Date.UTC(2026,0,1)); // ggf. anpassen, falls Excel anders anchored
-  const days = Math.floor((dateUTC - anchor) / 86400000);
+const FIBER1 = {
+  1: ["Spät","Nacht","Nacht","Nacht","Frei","Frei","Früh","Früh","Spät","Spät","Spät","Nacht","Nacht","Frei","Frei","Früh","Früh","Früh","Spät","Spät","Nacht","Nacht","Frei","Frei","Frei","Früh","Früh","Spät"],
+  2: ["Nacht","Frei","Frei","Frei","Früh","Früh","Spät","Spät","Nacht","Nacht","Nacht","Frei","Frei","Früh","Früh","Spät","Spät","Spät","Nacht","Nacht","Frei","Frei","Früh","Früh","Früh","Spät","Spät","Nacht"],
+  3: ["Frei","Früh","Früh","Früh","Spät","Spät","Nacht","Nacht","Frei","Frei","Frei","Früh","Früh","Spät","Spät","Nacht","Nacht","Nacht","Frei","Frei","Früh","Früh","Spät","Spät","Spät","Nacht","Nacht","Frei"],
+  4: ["Früh","Spät","Spät","Spät","Nacht","Nacht","Frei","Frei","Früh","Früh","Früh","Spät","Spät","Nacht","Nacht","Frei","Frei","Frei","Früh","Früh","Spät","Spät","Nacht","Nacht","Nacht","Frei","Frei","Früh"],
+};
 
-  // Fiber/Team Offset (damit P1/P2 verschoben sind). Wenn Excel anders: hier anpassen.
-  const teamOffset = (team === 1 ? 0 : 2);
-  const fiberOffset = (fiber === 1 ? 0 : 0);
-
-  const idx = (days + teamOffset + fiberOffset) % SHIFT_PATTERN.length;
-  const shift = SHIFT_PATTERN[(idx + SHIFT_PATTERN.length) % SHIFT_PATTERN.length];
-  return shift;
+export function rhythmFor(fiber, team) {
+  return (fiber === 1 ? FIBER1 : FIBER2)[team];
 }
 
-export function daysInMonthUTC(y, m0){
-  // m0: 0..11
-  return new Date(Date.UTC(y, m0+1, 0)).getUTCDate();
+// VBA: refDate=2026-01-01, refPos=0, pos=(refPos+daysDiff) mod 28
+const REF_DATE = new Date(2026, 0, 1);
+
+export function shiftForDate({ fiber, team, date }) {
+  const rhythm = rhythmFor(fiber, team);
+  const daysDiff = Math.floor((date - REF_DATE) / (24 * 3600 * 1000));
+  const pos = ((0 + daysDiff) % 28 + 28) % 28;
+  return rhythm[pos];
+}
+
+export function shiftLetter(shift) {
+  const s = String(shift || "").toLowerCase();
+  if (s === "früh") return "F";
+  if (s === "spät") return "S";
+  if (s === "nacht") return "N";
+  return "";
+}
+
+export function shiftColor(letter) {
+  // Excel-Farben: F gelb, S rot, N blau (hellblau im Print)
+  if (letter === "F") return "#ffff00";
+  if (letter === "S") return "#ff0000";
+  if (letter === "N") return "#00b0f0";
+  return "";
 }
