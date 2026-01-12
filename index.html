@@ -180,8 +180,9 @@
           <label for="fiber">Abteilung</label>
           <select id="fiber">
             <option value="" selected disabled>Bitte wählen…</option>
-            <option value="2">Fiber 2</option>
+            <!-- FIX: Reihenfolge wie gewünscht -->
             <option value="1">Fiber 1</option>
+            <option value="2">Fiber 2</option>
           </select>
         </div>
 
@@ -255,14 +256,10 @@
   const urlIosEl = document.getElementById('urlIos');
   const urlAndEl = document.getElementById('urlAndroid');
 
-  // ---- Year dropdown: current year .. current+4 (but >= 2026) ----
   const now = new Date();
   const currentYear = now.getFullYear();
   const startYear = Math.max(MIN_YEAR, currentYear);
   const endYear = currentYear + 4;
-
-  // Wenn currentYear < 2026, range wäre 2026..(currentYear+4) => ggf. kleiner/leer.
-  // Wir sichern das ab: endYear muss mindestens startYear sein.
   const safeEndYear = Math.max(endYear, startYear);
 
   for(let y = startYear; y <= safeEndYear; y++){
@@ -273,7 +270,6 @@
   }
   yearHint.textContent = `Erlaubt: ${startYear} bis ${safeEndYear}`;
 
-  // ---- Team options depend on fiber (immer P1..P4) ----
   function setTeamOptionsForFiber(fiberVal){
     teamEl.innerHTML = '';
     const ph = document.createElement('option');
@@ -289,7 +285,6 @@
       return;
     }
 
-    // Teams 1..4 (WICHTIG: nicht anfassen -> Excel-Rhythmus bleibt je Team)
     const teams = [
       {value:'1', label:'Team 1 (P1)'},
       {value:'2', label:'Team 2 (P2)'},
@@ -336,12 +331,10 @@
     btnPrintV2.disabled  = !ok;
   }
 
-  // Initial: keine Vorauswahl -> Buttons aus
   setTeamOptionsForFiber('');
   updateButtons();
 
   fiberEl.addEventListener('change', () => {
-    // keine automatische Team-Vorauswahl -> placeholder bleibt
     setTeamOptionsForFiber(fiberEl.value);
     setError('');
     outEl.style.display = 'none';
@@ -350,7 +343,6 @@
   teamEl.addEventListener('change', () => { setError(''); updateButtons(); });
   yearEl.addEventListener('change', () => { setError(''); updateButtons(); });
 
-  // ---- Print buttons open print pages ----
   function openPrint(which){
     if(!isValidSelection()) return;
     const {fiber, team, year} = getParams();
@@ -361,7 +353,6 @@
   btnPrintV1.addEventListener('click', () => openPrint('printv1'));
   btnPrintV2.addEventListener('click', () => openPrint('printv2'));
 
-  // ---- Generate: call backend (/generate) and show links + QR ----
   btnGenerate.addEventListener('click', async () => {
     setError('');
     outEl.style.display = 'none';
@@ -387,11 +378,6 @@
 
       const data = await res.json();
 
-      // Erwartet:
-      // data.ics_url  (https://.../ics?fiber=..)
-      // data.raw_url  (https://raw... oder direkt link)
-      // data.webcal_url (webcal://...)
-      // data.filename
       const icsUrl = data.ics_url || `/ics?fiber=${fiber}&team=${team}&year=${year}`;
       const rawUrl = data.raw_url || '';
       const webcalUrl = data.webcal_url || '';
@@ -409,8 +395,6 @@
       if(rawUrl) linksEl.appendChild(mkA(rawUrl, 'RAW (Download)'));
       if(webcalUrl) linksEl.appendChild(mkA(webcalUrl, 'iOS webcal (Abo)'));
 
-      // QR-Codes (extern über qrserver)
-      // Wichtig: QR-URLs müssen URL-encoded sein.
       const qrBase = 'https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=';
 
       if(webcalUrl){
@@ -425,7 +409,6 @@
         qrAndImg.src = qrBase + encodeURIComponent(rawUrl);
         urlAndEl.textContent = rawUrl;
       }else if(icsUrl){
-        // Fallback: nimm icsUrl
         qrAndImg.src = qrBase + encodeURIComponent(icsUrl);
         urlAndEl.textContent = icsUrl;
       }
