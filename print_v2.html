@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Schichtkalender (ICS) – Web Generator</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:#fafafa;color:#111}
+    .wrap{max-width:980px;margin:0 auto;padding:28px 16px}
+    h1{margin:0 0 14px;text-align:center;font-size:34px}
+    .card{background:#fff;border:1px solid #ddd;border-radius:12px;padding:18px;box-shadow:0 1px 10px rgba(0,0,0,.04)}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    label{font-weight:600;font-size:13px}
+    select,input{width:100%;padding:10px 12px;border:1px solid #ccc;border-radius:10px;font-size:16px}
+    .btn{width:100%;margin-top:14px;background:#0b5cff;color:#fff;border:0;border-radius:10px;padding:12px 14px;font-size:18px;font-weight:700;cursor:pointer}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .btn2{background:#111;color:#fff;border:0;border-radius:10px;padding:10px 12px;font-size:14px;font-weight:700;cursor:pointer}
+    .btn3{background:#fff;color:#111;border:1px solid #bbb;border-radius:10px;padding:10px 12px;font-size:14px;font-weight:700;cursor:pointer}
+    .note{margin-top:12px;font-size:14px;color:#333}
+    .err{margin-top:10px;color:#b00020;font-weight:700}
+    .ok{margin-top:10px;color:#0b7a2a;font-weight:700}
+    .mini{font-size:12px;color:#555}
+    .qrbox{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;align-items:start}
+    .qr{border:1px solid #ddd;border-radius:12px;padding:12px;background:#fff}
+    .qr h3{margin:0 0 8px;font-size:14px}
+    .link{word-break:break-all;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Schichtkalender (ICS) – Web Generator</h1>
+
+    <div class="card">
+      <div class="grid">
+        <div>
+          <label for="fiber">Fiber</label>
+          <!-- Wunsch: andersrum sortiert = Fiber 1 zuerst -->
+          <select id="fiber">
+            <option value="1">Fiber 1</option>
+            <option value="2" selected>Fiber 2</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="team">Team</label>
+          <select id="team">
+            <option value="1">Team 1 (P1)</option>
+            <option value="2" selected>Team 2 (P2)</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="year">Jahr</label>
+          <input id="year" type="number" />
+          <div class="mini" id="yearHint"></div>
+        </div>
+
+        <div>
+          <label>Aktionen</label>
+          <div class="row">
+            <button class="btn2" id="btnPrintV2" type="button">Druck V2 (Kalender)</button>
+            <button class="btn2" id="btnPrintV1" type="button">Druck V1 (Balken)</button>
+            <button class="btn3" id="btnDownloadICS" type="button">ICS Download</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn" id="btnGenerate" type="button">Generieren</button>
+
+      <div id="msg" class="err" style="display:none;"></div>
+      <div id="ok" class="ok" style="display:none;"></div>
+
+      <div class="qrbox">
+        <div class="qr">
+          <h3>QR Code: ICS-Link (zum Abonnieren)</h3>
+          <div id="qrics"></div>
+          <div class="mini">Scan → Kalender abonnieren/importieren</div>
+          <div class="link" id="icsLinkText"></div>
+          <button class="btn3" id="btnCopyICS" type="button" style="margin-top:8px">ICS-Link kopieren</button>
+        </div>
+
+        <div class="qr">
+          <h3>Direktlinks</h3>
+          <div class="mini">Druck-Links (falls du sie teilen willst):</div>
+          <div class="link" id="p1"></div>
+          <div class="link" id="p2"></div>
+        </div>
+      </div>
+
+      <div class="note">
+        Hinweis: Jahre sind absichtlich begrenzt auf <b>aktuelles Jahr bis +4</b> (wegen Ferien RLP).
+      </div>
+    </div>
+  </div>
+
+  <!-- QR lib -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    // Jahr-Limit: aktuelles Jahr bis +4
+    const nowYear = new Date().getFullYear();
+    const minYear = nowYear;
+    const maxYear = nowYear + 4;
+
+    $("year").value = nowYear;
+    $("year").min = minYear;
+    $("year").max = maxYear;
+    $("yearHint").textContent = `Erlaubt: ${minYear} bis ${maxYear}`;
+
+    function params() {
+      const fiber = Number($("fiber").value);
+      const team  = Number($("team").value);
+      const year  = Number($("year").value);
+      return { fiber, team, year };
+    }
+
+    function validate({fiber, team, year}) {
+      if (![1,2].includes(fiber)) return "fiber muss 1 oder 2 sein";
+      if (![1,2].includes(team)) return "team muss 1 oder 2 sein";
+      if (!Number.isFinite(year)) return "year fehlt";
+      if (year < minYear || year > maxYear) return `year muss ${minYear} bis ${maxYear} sein`;
+      return null;
+    }
+
+    function baseUrl() {
+      // Works on pages.dev + custom domain
+      return location.origin;
+    }
+
+    function icsUrl({fiber, team, year}) {
+      return `${baseUrl()}/ics?fiber=${fiber}&team=${team}&year=${year}`;
+    }
+
+    function printUrlV1({fiber, team, year}) {
+      return `${baseUrl()}/print_v1.html?fiber=${fiber}&team=${team}&year=${year}`;
+    }
+
+    function printUrlV2({fiber, team, year}) {
+      return `${baseUrl()}/print_v2.html?fiber=${fiber}&team=${team}&year=${year}`;
+    }
+
+    function setMsg(text, ok=false) {
+      $("msg").style.display = ok ? "none" : "block";
+      $("ok").style.display = ok ? "block" : "none";
+      $("msg").textContent = ok ? "" : text;
+      $("ok").textContent  = ok ? text : "";
+    }
+
+    let qrObj = null;
+
+    function updateLinksAndQR() {
+      const p = params();
+      const err = validate(p);
+      if (err) { setMsg("Fehler: " + err); return; }
+
+      const link = icsUrl(p);
+      $("icsLinkText").textContent = link;
+      $("p1").textContent = "V1: " + printUrlV1(p);
+      $("p2").textContent = "V2: " + printUrlV2(p);
+
+      $("qrics").innerHTML = "";
+      qrObj = new QRCode($("qrics"), { text: link, width: 180, height: 180 });
+      setMsg("OK – Links/QR aktualisiert.", true);
+    }
+
+    $("fiber").addEventListener("change", updateLinksAndQR);
+    $("team").addEventListener("change", updateLinksAndQR);
+    $("year").addEventListener("input", updateLinksAndQR);
+
+    $("btnCopyICS").addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText($("icsLinkText").textContent);
+        setMsg("ICS-Link kopiert ✅", true);
+      } catch {
+        setMsg("Kopieren ging nicht (Browser blockt Clipboard).");
+      }
+    });
+
+    $("btnDownloadICS").addEventListener("click", () => {
+      const p = params();
+      const err = validate(p);
+      if (err) { setMsg("Fehler: " + err); return; }
+      location.href = icsUrl(p);
+    });
+
+    $("btnPrintV1").addEventListener("click", () => {
+      const p = params();
+      const err = validate(p);
+      if (err) { setMsg("Fehler: " + err); return; }
+      window.open(printUrlV1(p), "_blank", "noopener");
+    });
+
+    $("btnPrintV2").addEventListener("click", () => {
+      const p = params();
+      const err = validate(p);
+      if (err) { setMsg("Fehler: " + err); return; }
+      window.open(printUrlV2(p), "_blank", "noopener");
+    });
+
+    $("btnGenerate").addEventListener("click", async () => {
+      const p = params();
+      const err = validate(p);
+      if (err) { setMsg("Fehler: " + err); return; }
+
+      setMsg("Generiere…", true);
+      const url = `${baseUrl()}/generate?fiber=${p.fiber}&team=${p.team}&year=${p.year}`;
+      try {
+        const res = await fetch(url);
+        if (!res.ok) {
+          const t = await res.text();
+          throw new Error(t || `HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        // data: { icsUrl, printV1Url, printV2Url }
+        $("icsLinkText").textContent = data.icsUrl;
+        $("p1").textContent = "V1: " + data.printV1Url;
+        $("p2").textContent = "V2: " + data.printV2Url;
+
+        $("qrics").innerHTML = "";
+        qrObj = new QRCode($("qrics"), { text: data.icsUrl, width: 180, height: 180 });
+
+        setMsg("Fertig ✅", true);
+      } catch (e) {
+        setMsg("Fehler: " + e.message);
+      }
+    });
+
+    updateLinksAndQR();
+  </script>
+</body>
+</html>
