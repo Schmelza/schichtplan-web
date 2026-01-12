@@ -103,8 +103,14 @@ export async function onRequestGet({ request }) {
   th.rlabel{width:72px;background:${HEADER_BG}}
   td.cell{width:22px}
   @media print{
+    @page{ size: A4 landscape; margin: 8mm; }
     body{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
     .page{padding:0}
+    /* Try to keep everything on ONE page */
+    h1{font-size:18px}
+    .printed{font-size:10px}
+    .phones{font-size:10px}
+    th,td{font-size:9px; padding:2px}
   }
   .legend{margin-top:8px;text-align:center;font-size:11px}
   .legend span{display:inline-block;border:1px solid #000;padding:4px 8px;margin:0 4px}

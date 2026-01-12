@@ -107,8 +107,16 @@ export async function onRequestGet({ request }) {
   .s{background:${SHIFT_COLORS["S"]}}
   .n{background:${SHIFT_COLORS["N"]}}
   @media print{
+    @page{ size: A4 landscape; margin: 8mm; }
     body{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
     .page{padding:0}
+
+    /* Try to keep everything on ONE page (browser PDF export) */
+    h1{font-size:18px}
+    .printed{font-size:10px}
+    .phones{font-size:10px}
+    .tablewrap{margin-top:8px; padding:6px;}
+    th,td{font-size:9px; padding:1px 2px;}
   }
 </style>
 </head>
