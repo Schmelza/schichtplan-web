@@ -1,58 +1,27 @@
 // functions/generate.js
-import { json, text, isFeiertagRLP, isFerienRLP, shiftForDate, daysInMonthUTC } from "./_lib.js";
+import { assertParams } from "./_lib.js";
 
-export async function onRequestGet(context){
-  const url = new URL(context.request.url);
+export async function onRequestGet({ request }) {
+  try {
+    const url = new URL(request.url);
+    const fiber = parseInt(url.searchParams.get("fiber") || "", 10);
+    const team  = parseInt(url.searchParams.get("team")  || "", 10);
+    const year  = parseInt(url.searchParams.get("year")  || "", 10);
 
-  const fiber = Number(url.searchParams.get("fiber"));
-  const team  = Number(url.searchParams.get("team"));
-  const year  = Number(url.searchParams.get("year"));
-  const mode  = (url.searchParams.get("mode") || "").toLowerCase();
+    assertParams({ fiber, team, year });
 
-  // Jahr-Limit: aktuelles Jahr bis +4
-  const nowYear = new Date().getFullYear();
-  const minYear = nowYear;
-  const maxYear = nowYear + 4;
+    const origin = url.origin;
+    const host = url.host;
 
-  if (![1,2].includes(fiber)) return text("fiber muss 1 oder 2 sein", 400);
-  if (![1,2].includes(team))  return text("team muss 1 oder 2 sein", 400);
-  if (!Number.isFinite(year)) return text("year fehlt", 400);
-  if (year < minYear || year > maxYear) return text(`year muss ${minYear} bis ${maxYear} sein`, 400);
+    const icsHttps = `${origin}/ics?fiber=${fiber}&team=${team}&year=${year}`;
+    const webcal = `webcal://${host}/ics?fiber=${fiber}&team=${team}&year=${year}`;
+    const print1 = `${origin}/print?v=1&fiber=${fiber}&team=${team}&year=${year}`;
+    const print2 = `${origin}/print?v=2&fiber=${fiber}&team=${team}&year=${year}`;
 
-  // mode=data => Print-Seiten holen strukturiertes JSON
-  if (mode === "data") {
-    const months = [];
-    for(let m=0;m<12;m++){
-      const dim = daysInMonthUTC(year, m);
-      const days = [];
-      for(let d=1; d<=dim; d++){
-        const dt = new Date(Date.UTC(year, m, d));
-        const shift = shiftForDate(dt, fiber, team);
-        const isFeiertag = isFeiertagRLP(dt);
-        const isFerien = await isFerienRLP(dt);
-        days.push({
-          day: d,
-          month: m+1,
-          weekday: dt.getUTCDay(), // 0..6
-          shift,
-          isFeiertag,
-          isFerien
-        });
-      }
-      months.push({ month: m+1, days });
-    }
-
-    return json({
-      meta: { fiber, team, year, minYear, maxYear },
-      months
+    return new Response(JSON.stringify({ ok:true, icsHttps, webcal, print1, print2 }), {
+      headers: { "content-type": "application/json; charset=utf-8" }
     });
+  } catch (e) {
+    return new Response(String(e?.message || e), { status: 400, headers: { "content-type": "text/plain; charset=utf-8" }});
   }
-
-  // Standard: Links zurückgeben
-  const origin = url.origin;
-  return json({
-    icsUrl: `${origin}/ics?fiber=${fiber}&team=${team}&year=${year}`,
-    printV1Url: `${origin}/print_v1.html?fiber=${fiber}&team=${team}&year=${year}`,
-    printV2Url: `${origin}/print_v2.html?fiber=${fiber}&team=${team}&year=${year}`
-  });
 }
