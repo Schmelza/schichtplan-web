@@ -107,16 +107,29 @@ export async function onRequestGet({ request }) {
   .s{background:${SHIFT_COLORS["S"]}}
   .n{background:${SHIFT_COLORS["N"]}}
   @media print{
-    @page{ size: A4 landscape; margin: 8mm; }
+    /* More usable print area (height was overflowing) */
+    @page{ size: A4 landscape; margin: 5mm; }
+
     body{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
     .page{padding:0}
 
-    /* Try to keep everything on ONE page (browser PDF export) */
-    h1{font-size:18px}
-    .printed{font-size:10px}
-    .phones{font-size:10px}
-    .tablewrap{margin-top:8px; padding:6px;}
-    th,td{font-size:9px; padding:1px 2px;}
+    /* Tighten header to save vertical space */
+    .top{gap:8px}
+    h1{font-size:16px; margin:0}
+    .printed{font-size:9px; margin:2px 0 0}
+    .phones{font-size:9px; line-height:1.1; padding:4px 6px}
+
+    /* Tighten table area */
+    .tablewrap{margin-top:4px; padding:4px;}
+    table{table-layout:fixed}
+    th,td{font-size:8px; padding:0 1px; line-height:1.0}
+
+    /* Prevent weekday text from wrapping (wrap increases row height) */
+    td.txt{white-space:nowrap; overflow:hidden; text-overflow:clip}
+
+    /* Legend smaller */
+    .legend{margin-top:4px; font-size:9px}
+    .legend span{padding:2px 6px; margin:0 3px}
   }
 </style>
 </head>
