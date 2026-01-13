@@ -38,9 +38,10 @@ export async function onRequestGet({ request }) {
 
   const ferienSet = await getFerienSetForYear(year);
 
-  const tel = (fiber === 1 ? TEL.fiber1 : TEL.fiber2);
-  const title = `Schichtplan ${year} – Fiber ${fiber} – Team P${team} (${teamLabel(team)}) – V2`;
-  const printTitle = `${title} (V2)`;
+const tel = (fiber === 1 ? TEL.fiber1 : TEL.fiber2);
+const title = `Schichtplan ${year} – Fiber ${fiber} - P${team}`;
+const printTitle = title;
+
 
   // Build table: 12 months horizontally, each month 2 columns (Tag + Wochentag/Schicht)
   // Like your Excel "V2": Mark (holiday/vacation) | Day number | Day name + shift color
