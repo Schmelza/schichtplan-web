@@ -270,10 +270,10 @@
         return a;
       };
 
-      linksEl.appendChild(mkA(icsUrl, 'ICS Android/iOS'));
-      linksEl.appendChild(mkA(rawUrl, 'RAW Android/iOS'));
-      linksEl.appendChild(mkA(webcalUrl, 'iOS webcal (Abo)Android/iOS'));
-
+      linksEl.appendChild(mkA(icsUrl, 'ICS (Android/iOS)'));
+      linksEl.appendChild(mkA(webcalUrl, 'Kalender Abo (Android/iOS)'));
+      linksEl.appendChild(mkA(rawUrl, 'RAW (Android/iOS)'));
+      
       const qrBase = 'https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=';
       qrIosImg.src = qrBase + encodeURIComponent(webcalUrl);
       urlIosEl.textContent = webcalUrl;
