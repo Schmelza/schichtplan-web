@@ -82,8 +82,8 @@
 
       <div class="actions">
         <button id="btnGenerate" class="primary" disabled>Generieren</button>
-        <button id="btnPrintV1" class="secondary" disabled>Druck V1</button>
-        <button id="btnPrintV2" class="secondary" disabled>Druck V2</button>
+        <button id="btnPrintV1" class="secondary" disabled>Jahresplan Monate untereinander</button>
+        <button id="btnPrintV2" class="secondary" disabled>Jahresplan Monate nebeneinander</button>
       </div>
 
       <div class="err" id="err"></div>
@@ -164,10 +164,10 @@
     }
 
     const teams = [
-      {value:'1', label:'Team 1 (P1)'},
-      {value:'2', label:'Team 2 (P2)'},
-      {value:'3', label:'Team 3 (P3)'},
-      {value:'4', label:'Team 4 (P4)'},
+      {value:'1', label:'P1'},
+      {value:'2', label:'P2'},
+      {value:'3', label:'P3'},
+      {value:'4', label:'P4'},
     ];
     for(const t of teams){
       const opt = document.createElement('option');
