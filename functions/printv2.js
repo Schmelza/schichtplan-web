@@ -81,9 +81,18 @@ export async function onRequestGet({ request }) {
 <title>${safeHtml(title)}</title>
 <style>
   *{box-sizing:border-box}
-  body{font-family:Arial,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0;background:#fff;color:#000}
-  /* On screen, render like a centered sheet */
-  .page{padding:18px;max-width:1120px;margin:0 auto}
+  /* Screen view should look like the print result (one A4 landscape sheet).
+     Print preview in browsers uses physical sizes; to avoid screen/print differences
+     we keep the same mm-based layout on screen and just add a subtle page background. */
+  body{font-family:Arial,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0;background:#e9ecef;color:#000}
+  .page{
+    width:297mm;              /* A4 landscape width */
+    min-height:210mm;         /* A4 landscape height */
+    padding:6mm 6mm 5mm 6mm;  /* similar to Excel margins */
+    margin:12px auto;
+    background:#fff;
+    box-shadow:0 6px 24px rgba(0,0,0,.12);
+  }
   .top{
     display:grid;
     grid-template-columns: 1fr auto;
@@ -96,7 +105,7 @@ export async function onRequestGet({ request }) {
   .tablewrap{margin-top:10px;border:1px solid #000;padding:8px}
   /* Keep screen + print identical column sizing */
   table{border-collapse:collapse;width:100%;table-layout:fixed}
-  th,td{border:1px solid #000;font-size:11px;padding:2px 4px;text-align:center;vertical-align:middle}
+  th,td{border:1px solid #000;font-size:11px;padding:2px 4px;text-align:center;vertical-align:middle;height:20px}
   th.mhead{background:${HEADER_BG};font-weight:700}
   td.mark{width:22px}
   td.day{width:22px}
@@ -113,8 +122,9 @@ export async function onRequestGet({ request }) {
     /* More usable print area (height was overflowing) */
     @page{ size: A4 landscape; margin: 5mm; }
 
-    body{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
-    .page{padding:8px}
+    body{background:#fff;-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+    /* Use the same physical padding as the on-screen "sheet" to avoid layout differences */
+    .page{padding:8mm}
 
     /* Tighten header to save vertical space */
     .top{gap:10px}
