@@ -1,5 +1,0 @@
-# Ensure Pages Functions routes are not shadowed by SPA rewrites
-/generate*  /generate  200
-/ics*       /ics       200
-/printv1*   /printv1   200
-/printv2*   /printv2   200
