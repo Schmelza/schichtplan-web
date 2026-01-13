@@ -82,7 +82,8 @@ export async function onRequestGet({ request }) {
 <style>
   *{box-sizing:border-box}
   body{font-family:Arial,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0;background:#fff;color:#000}
-  .page{padding:18px}
+  /* On screen, render like a centered sheet */
+  .page{padding:18px;max-width:1120px;margin:0 auto}
   .top{
     display:grid;
     grid-template-columns: 1fr auto;
@@ -93,7 +94,8 @@ export async function onRequestGet({ request }) {
   .printed{margin:4px 0 0;text-align:center;font-style:italic;font-size:12px}
   .phones{font-size:11px;line-height:1.2;border:1px solid #000;padding:6px 8px;white-space:pre-line;text-align:center}
   .tablewrap{margin-top:10px;border:1px solid #000;padding:8px}
-  table{border-collapse:collapse;width:100%}
+  /* Keep screen + print identical column sizing */
+  table{border-collapse:collapse;width:100%;table-layout:fixed}
   th,td{border:1px solid #000;font-size:11px;padding:2px 4px;text-align:center;vertical-align:middle}
   th.mhead{background:${HEADER_BG};font-weight:700}
   td.mark{width:22px}
@@ -123,7 +125,8 @@ export async function onRequestGet({ request }) {
     /* Tighten table area */
     .tablewrap{margin-top:8px; padding:6px;}
     table{table-layout:fixed}
-    th,td{font-size:10px; padding:1px 3px; line-height:1.15; height:16px}
+    /* Slightly larger rows so the page is better filled (closer to Excel look) */
+    th,td{font-size:10.5px; padding:1px 3px; line-height:1.15; height:18px}
 
     /* Prevent weekday text from wrapping (wrap increases row height) */
     td.txt{white-space:nowrap; overflow:hidden; text-overflow:clip}
