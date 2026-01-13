@@ -96,7 +96,7 @@ export async function onRequestGet({ request }) {
   table{border-collapse:collapse;width:100%}
   th,td{border:1px solid #000;font-size:11px;padding:2px 4px;text-align:center;vertical-align:middle}
   th.mhead{background:${HEADER_BG};font-weight:700}
-  td.mark{width:10px}
+  td.mark{width:22px}
   td.day{width:22px}
   td.txt{width:auto;font-weight:700}
   .sletter{display:inline-block;min-width:14px;font-weight:900}
@@ -112,25 +112,25 @@ export async function onRequestGet({ request }) {
     @page{ size: A4 landscape; margin: 5mm; }
 
     body{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
-    .page{padding:0}
+    .page{padding:8px}
 
     /* Tighten header to save vertical space */
-    .top{gap:8px}
-    h1{font-size:16px; margin:0}
-    .printed{font-size:9px; margin:2px 0 0}
-    .phones{font-size:9px; line-height:1.1; padding:4px 6px}
+    .top{gap:10px}
+    h1{font-size:18px; margin:0}
+    .printed{font-size:10px; margin:3px 0 0}
+    .phones{font-size:10px; line-height:1.15; padding:5px 7px}
 
     /* Tighten table area */
-    .tablewrap{margin-top:4px; padding:4px;}
+    .tablewrap{margin-top:8px; padding:6px;}
     table{table-layout:fixed}
-    th,td{font-size:9px; padding:0 2px; line-height:1.05}
+    th,td{font-size:10px; padding:1px 3px; line-height:1.15; height:16px}
 
     /* Prevent weekday text from wrapping (wrap increases row height) */
     td.txt{white-space:nowrap; overflow:hidden; text-overflow:clip}
 
     /* Legend smaller */
-    .legend{margin-top:4px; font-size:9px}
-    .legend span{padding:2px 6px; margin:0 3px}
+    .legend{margin-top:8px; font-size:10px}
+    .legend span{padding:3px 8px; margin:0 4px}
   }
 </style>
 </head>
