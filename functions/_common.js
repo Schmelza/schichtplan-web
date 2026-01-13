@@ -24,7 +24,7 @@ function parseIntParam(url, key) {
 
 function clampAllowedYear(year) {
   const now = new Date();
-  const maxYear = now.getFullYear() + 4;
+  const maxYear = now.getFullYear() + 5;
   const minYear = Math.max(MIN_YEAR, now.getFullYear());
   if (year < minYear || year > maxYear) return { ok:false, minYear, maxYear };
   return { ok:true, minYear, maxYear };
