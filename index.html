@@ -1,172 +1,148 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Schichtkalender – Web Generator</title>
+  <meta charset="UTF-8" />
+  <title>Huhtamaki Fiber Schicht Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    :root{
-      --bg:#ffffff;
-      --text:#111827;
-      --muted:#6b7280;
-      --border:#e5e7eb;
-      --primary:#2563eb;
-      --primary2:#1d4ed8;
-      --danger:#b91c1c;
-      --card:#ffffff;
-      --shadow:0 10px 30px rgba(0,0,0,.06);
-      --radius:14px;
-    }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--text);background:var(--bg);}
-    .wrap{max-width:980px;margin:48px auto;padding:0 16px;}
-    h1{font-size:42px;line-height:1.05;margin:0 0 22px;text-align:center;letter-spacing:-0.02em;}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-    @media (max-width:820px){.grid{grid-template-columns:1fr}h1{font-size:34px}}
-    label{display:block;font-weight:650;margin:0 0 8px;}
-    select{width:100%;padding:12px 12px;border:1px solid var(--border);border-radius:10px;font-size:16px;outline:none;background:#fff;}
-    select:focus{border-color:#93c5fd;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
-    .actions{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;}
-    button,a.btn{border:0;border-radius:12px;padding:12px 16px;font-weight:700;font-size:16px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;user-select:none;}
-    button.primary{background:var(--primary);color:#fff;}
-    button.primary:hover{background:var(--primary2)}
-    button.secondary{background:#f3f4f6;color:#111827;}
-    button.secondary:hover{background:#e5e7eb}
-    button:disabled{opacity:.55;cursor:not-allowed;}
-    .hint{color:var(--muted);margin-top:10px;font-size:14px;}
-    .err{margin-top:12px;color:var(--danger);font-weight:700;display:none;}
-    .out{margin-top:18px;padding-top:18px;border-top:1px dashed var(--border);display:none;}
-    .out h2{margin:0 0 10px;font-size:18px;}
-    .links{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 0;}
-    .links a{background:#f3f4f6;color:#111827;padding:10px 12px;border-radius:12px;text-decoration:none;border:1px solid #e5e7eb;font-weight:650;}
-    .links a:hover{background:#e5e7eb}
-    .qrgrid{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-    @media (max-width:820px){.qrgrid{grid-template-columns:1fr}}
-    .qrbox{border:1px solid var(--border);border-radius:12px;padding:12px;background:#fff;}
-    .qrbox h3{margin:0 0 10px;font-size:15px;}
-    .qrbox img{width:100%;max-width:320px;height:auto;display:block;margin:0 auto 10px;}
-    .small{font-size:12px;color:var(--muted);word-break:break-all;}
+    body { font-family: system-ui, -apple-system, sans-serif; background:#f6f7f9; }
+    .box { max-width:700px; margin:40px auto; background:#fff; padding:24px; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.08); }
+    h1 { text-align:center; margin-bottom:24px; }
+    label { font-weight:600; display:block; margin-top:16px; }
+    select, button { width:100%; padding:10px; margin-top:6px; border-radius:8px; border:1px solid #ccc; }
+    .row { display:flex; gap:16px; }
+    .row > div { flex:1; }
+    .actions { margin-top:24px; display:flex; gap:12px; flex-wrap:wrap; }
+    button.primary { background:#2563eb; color:#fff; border:none; }
+    button.secondary { background:#f1f5f9; border:none; }
+    .error { color:#b91c1c; margin-top:12px; font-weight:600; }
+    .hint { font-size:13px; color:#555; margin-top:12px; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>Huhtamaki Fiber Schicht Generator für PC und Smartphone von Johannes Trippen</h1>
 
-    <div class="card">
-      <div class="grid">
-        <div>
-          <label for="fiber">Abteilung</label>
-          <select id="fiber">
-            <option value="" selected disabled>Bitte wählen…</option>
-            <option value="1">Fiber 1</option>
-            <option value="2">Fiber 2</option>
-          </select>
-        </div>
+<div class="box">
+  <h1>Huhtamaki Fiber Schicht Generator</h1>
 
-        <div>
-          <label for="team">Schicht</label>
-          <select id="team" disabled>
-            <option value="" selected disabled>Bitte zuerst Abteilung wählen…</option>
-          </select>
-        </div>
-
-        <div>
-          <label for="year">Jahr</label>
-          <select id="year">
-            <option value="" selected disabled>Bitte wählen…</option>
-          </select>
-          <div class="hint" id="yearHint"></div>
-        </div>
-      </div>
-
-      <div class="actions">
-        <button id="btnGenerate" class="primary" disabled>Generieren</button>
-        <button id="btnPrintV1" class="secondary" disabled>Jahresplan Monate untereinander</button>
-        <button id="btnPrintV2" class="secondary" disabled>Jahresplan Monate nebeneinander</button>
-      </div>
-
-      <div class="err" id="err"></div>
-
-      <div class="out" id="out">
-        <h2>Downloads / Links</h2>
-        <div class="links" id="links"></div>
-
-        <div class="qrgrid" id="qrgrid">
-          <div class="qrbox">
-            <h3>iOS (Abo / webcal)</h3>
-            <img id="qrIos" alt="QR iOS" />
-            <div class="small" id="urlIos"></div>
-          </div>
-          <div class="qrbox">
-            <h3>Android (RAW Download/Import)</h3>
-            <img id="qrAndroid" alt="QR Android" />
-            <div class="small" id="urlAndroid"></div>
-          </div>
-        </div>
-      </div>
+  <div class="row">
+    <div>
+      <label for="department">Abteilung</label>
+      <select id="department"></select>
     </div>
-
-    <div class="hint" style="text-align:center;margin-top:14px;">
-      Tipp: Nach dem Generieren kannst du die ICS direkt abonnieren oder downloaden.
+    <div>
+      <label for="shift">Schicht</label>
+      <select id="shift"></select>
     </div>
   </div>
 
+  <label for="year">Jahr</label>
+  <select id="year"></select>
+  <div id="yearInfo" class="hint"></div>
+
+  <div class="actions">
+    <button class="primary" id="btnGenerate">Generieren</button>
+    <button class="secondary" id="btnPrintV1">Druck Monat untereinander</button>
+    <button class="secondary" id="btnPrintV2">Druck Monat nebeneinander</button>
+  </div>
+
+  <div id="error" class="error"></div>
+</div>
+
 <script>
-(function(){
-  const MIN_YEAR = 2026;
-let startYear = MIN_YEAR;
-let safeEndYear = MIN_YEAR;
+/* ===============================
+   1. KONFIG
+================================ */
+const STRUCTURE = {
+  "Fiber 2": ["P1", "P2", "P3"],
+  "Fiber 3": ["P1", "P2"]
+};
 
-  const fiberEl = document.getElementById('fiber');
-  const teamEl  = document.getElementById('team');
-  const yearEl  = document.getElementById('year');
-  const yearHint= document.getElementById('yearHint');
+/* ===============================
+   2. ELEMENTE
+================================ */
+const depSel = document.getElementById("department");
+const shiftSel = document.getElementById("shift");
+const yearSel = document.getElementById("year");
+const errorBox = document.getElementById("error");
+const yearInfo = document.getElementById("yearInfo");
 
-  const btnGenerate = document.getElementById('btnGenerate');
-  const btnPrintV1  = document.getElementById('btnPrintV1');
-  const btnPrintV2  = document.getElementById('btnPrintV2');
-
-  const errEl   = document.getElementById('err');
-  const outEl   = document.getElementById('out');
-  const linksEl = document.getElementById('links');
-
-  const qrIosImg = document.getElementById('qrIos');
-  const qrAndImg = document.getElementById('qrAndroid');
-  const urlIosEl = document.getElementById('urlIos');
-  const urlAndEl = document.getElementById('urlAndroid');
-
-  async function initYearOptions(){
-  // Default: MIN_YEAR .. current year + 4
-  startYear = MIN_YEAR;
-  safeEndYear = new Date().getFullYear() + 4;
-
-  // Prefer server-provided range if available
-  try{
-    const res = await fetch('./range', { cache: 'no-store' });
-    if(res.ok){
-      const j = await res.json();
-      if(typeof j.minYear === 'number') startYear = j.minYear;
-      if(typeof j.maxYear === 'number') safeEndYear = j.maxYear;
-    }
-  }catch(e){
-    // Fallback: allow current year .. current year + 4 (but never below MIN_YEAR)
-    const now = new Date();
-    startYear = Math.max(MIN_YEAR, now.getFullYear());
-    safeEndYear = startYear + 4;
-  }
-
-  yearEl.innerHTML = '<option value="" selected disabled>Bitte wählen…</option>';
-  for(let y = startYear; y <= safeEndYear; y++){
-    const opt = document.createElement('option');
-    opt.value = String(y);
-    opt.textContent = String(y);
-    yearEl.appendChild(opt);
-  }
-
-  if(yearHint) yearHint.textContent = `Erlaubt: ${startYear} bis ${safeEndYear}`;
+/* ===============================
+   3. ABTEILUNG → SCHICHT
+================================ */
+function fillDepartments() {
+  depSel.innerHTML = "";
+  Object.keys(STRUCTURE).forEach(dep => {
+    const o = document.createElement("option");
+    o.value = dep;
+    o.textContent = dep;
+    depSel.appendChild(o);
+  });
 }
-)();
+
+function fillShifts(dep) {
+  shiftSel.innerHTML = "";
+  STRUCTURE[dep].forEach(s => {
+    const o = document.createElement("option");
+    o.value = s;
+    o.textContent = s;
+    shiftSel.appendChild(o);
+  });
+}
+
+depSel.addEventListener("change", () => {
+  fillShifts(depSel.value);
+});
+
+/* ===============================
+   4. YEAR RANGE (SERVER)
+================================ */
+async function loadYearRange() {
+  try {
+    const r = await fetch("/range");
+    const j = await r.json();
+    populateYears(j.min, j.max);
+    yearInfo.textContent = `Erlaubt: ${j.min} bis ${j.max}`;
+  } catch {
+    populateYears(2026, 2030);
+    yearInfo.textContent = "Erlaubt: 2026 bis 2030 (Fallback)";
+  }
+}
+
+function populateYears(min, max) {
+  yearSel.innerHTML = "";
+  for (let y = min; y <= max; y++) {
+    const o = document.createElement("option");
+    o.value = y;
+    o.textContent = y;
+    yearSel.appendChild(o);
+  }
+}
+
+/* ===============================
+   5. ACTIONS
+================================ */
+function buildUrl(type) {
+  const p = new URLSearchParams({
+    department: depSel.value,
+    shift: shiftSel.value,
+    year: yearSel.value
+  });
+  return type === "gen"
+    ? `/generate?${p}`
+    : `/print${type}?${p}`;
+}
+
+document.getElementById("btnGenerate").onclick = () => location.href = buildUrl("gen");
+document.getElementById("btnPrintV1").onclick = () => location.href = buildUrl("v1");
+document.getElementById("btnPrintV2").onclick = () => location.href = buildUrl("v2");
+
+/* ===============================
+   6. INIT
+================================ */
+fillDepartments();
+fillShifts(Object.keys(STRUCTURE)[0]);
+loadYearRange();
 </script>
+
 </body>
 </html>
