@@ -108,7 +108,7 @@
     </div>
 
     <div class="hint" style="text-align:center;margin-top:14px;">
-      Tipp: Nach dem Generieren kannst du die ICS direkt abonnieren oder downloaden.
+      Tipp: iOS kann alle 3 Download´s importieren und QR-Codes Scannen. Android in der Regel den ICS direkt Download!
     </div>
   </div>
 
@@ -269,9 +269,9 @@
         return a;
       };
 
-      linksEl.appendChild(mkA(icsUrl, 'ICS (direkt)'));
-      linksEl.appendChild(mkA(rawUrl, 'RAW (Download)'));
-      linksEl.appendChild(mkA(webcalUrl, 'iOS webcal (Abo)'));
+      linksEl.appendChild(mkA(icsUrl, 'ICS (iOS/Android)'));
+      linksEl.appendChild(mkA(rawUrl, 'RAW (ios/Android)'));
+      linksEl.appendChild(mkA(webcalUrl, 'Kalender Abo (iOS/Android)'));
 
       const qrBase = 'https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=';
       qrIosImg.src = qrBase + encodeURIComponent(webcalUrl);
