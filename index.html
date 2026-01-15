@@ -21,16 +21,7 @@
     body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--text);background:var(--bg);}
     .wrap{max-width:980px;margin:48px auto;padding:0 16px;}
     h1{font-size:42px;line-height:1.05;margin:0 0 22px;text-align:center;letter-spacing:-0.02em;}
-
-    /* ⬇️ NEU: zweite Zeile kleiner unter der Überschrift */
-    .subtitle{
-      text-align:center;
-      font-size:14px;
-      color:var(--muted);
-      margin-top:-12px;
-      margin-bottom:22px;
-    }
-
+    .subtitle{text-align:center;font-size:14px;color:var(--muted);margin-top:-12px;margin-bottom:22px;}
     .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;}
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
     @media (max-width:820px){.grid{grid-template-columns:1fr}h1{font-size:34px}}
@@ -59,73 +50,103 @@
     .small{font-size:12px;color:var(--muted);word-break:break-all;}
   </style>
 </head>
+
 <body>
-  <div class="wrap">
+<div class="wrap">
 
-    <h1>Huhtamaki Fiber Schichtkalender Generator</h1>
-    <div class="subtitle">PC & Smartphone von Johannes Trippen</div>
+<h1>Huhtamaki Fiber Schichtkalender Generator</h1>
+<div class="subtitle">PC & Smartphone von Johannes Trippen</div>
 
-    <div class="card">
-      <div class="grid">
-        <div>
-          <label for="fiber">Abteilung</label>
-          <select id="fiber">
-            <option value="" selected disabled>Bitte wählen…</option>
-            <option value="1">Fiber 1</option>
-            <option value="2">Fiber 2</option>
-          </select>
-        </div>
-
-        <div>
-          <label for="team">Team</label>
-          <select id="team" disabled>
-            <option value="" selected disabled>Bitte zuerst Abteilung wählen…</option>
-          </select>
-        </div>
-
-        <div>
-          <label for="year">Jahr</label>
-          <select id="year">
-            <option value="" selected disabled>Bitte wählen…</option>
-          </select>
-          <div class="hint" id="yearHint"></div>
-        </div>
-      </div>
-
-      <div class="actions">
-        <button id="btnGenerate" class="primary" disabled>Generieren</button>
-        <button id="btnPrintV1" class="secondary" disabled>Jahresplan Monate untereinander</button>
-        <button id="btnPrintV2" class="secondary" disabled>Jahresplan Monate nebeneinander</button>
-      </div>
-
-      <div class="err" id="err"></div>
-
-      <div class="out" id="out">
-        <h2>Downloads / Links</h2>
-        <div class="links" id="links"></div>
-
-        <div class="qrgrid" id="qrgrid">
-          <div class="qrbox">
-            <h3>iOS (Abo / webcal)</h3>
-            <img id="qrIos" alt="QR iOS" />
-            <div class="small" id="urlIos"></div>
-          </div>
-          <div class="qrbox">
-            <h3>Android (RAW Download/Import)</h3>
-            <img id="qrAndroid" alt="QR Android" />
-            <div class="small" id="urlAndroid"></div>
-          </div>
-        </div>
-      </div>
+<div class="card">
+  <!-- FORM -->
+  <div class="grid">
+    <div>
+      <label for="fiber">Abteilung</label>
+      <select id="fiber">
+        <option value="" selected disabled>Bitte wählen…</option>
+        <option value="1">Fiber 1</option>
+        <option value="2">Fiber 2</option>
+      </select>
     </div>
 
-    <div class="hint" style="text-align:center;margin-top:14px;">
-      Tipp: iOS kann alle 3 Download´s importieren und QR-Codes Scannen. Android in der Regel den ICS direkt Download!
+    <div>
+      <label for="team">Team</label>
+      <select id="team" disabled>
+        <option value="" selected disabled>Bitte zuerst Abteilung wählen…</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="year">Jahr</label>
+      <select id="year">
+        <option value="" selected disabled>Bitte wählen…</option>
+      </select>
+      <div class="hint" id="yearHint"></div>
     </div>
   </div>
 
+  <div class="actions">
+    <button id="btnGenerate" class="primary" disabled>Generieren</button>
+    <button id="btnPrintV1" class="secondary" disabled>Jahresplan Monate untereinander</button>
+    <button id="btnPrintV2" class="secondary" disabled>Jahresplan Monate nebeneinander</button>
+  </div>
+
+  <div class="err" id="err"></div>
+
+  <div class="out" id="out">
+    <h2>Downloads / Links</h2>
+    <div class="links" id="links"></div>
+
+    <div class="qrgrid" id="qrgrid">
+      <div class="qrbox">
+        <h3>iOS (Abo / webcal)</h3>
+        <img id="qrIos" alt="QR iOS" />
+        <div class="small" id="urlIos"></div>
+      </div>
+      <div class="qrbox">
+        <h3>Android (RAW Download/Import)</h3>
+        <img id="qrAndroid" alt="QR Android" />
+        <div class="small" id="urlAndroid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="hint" style="text-align:center;margin-top:14px;">
+  Tipp: iOS kann alle 3 Download´s importieren und QR-Codes Scannen. Android in der Regel den ICS direkt Download!
+</div>
+
+<!-- COUNTER (unauffällig) -->
+<div id="genCounter" class="hint" style="text-align:center;font-size:12px;margin-top:6px;">
+  Generierungen insgesamt: 0
+</div>
+
+</div>
+
 <script>
 (function(){
+
+  /* ================= COUNTER ================= */
+  const COUNTER_KEY = 'huhtamaki_generator_count';
+
+  function getCount(){
+    return Number(localStorage.getItem(COUNTER_KEY) || 0);
+  }
+
+  function incrementCount(){
+    const c = getCount() + 1;
+    localStorage.setItem(COUNTER_KEY, c);
+    updateCounterView();
+  }
+
+  function updateCounterView(){
+    const el = document.getElementById('genCounter');
+    if(el){
+      el.textContent = 'Generierungen insgesamt: ' + getCount();
+    }
+  }
+  /* =========================================== */
+
   const MIN_YEAR = 2026;
 
   const fiberEl = document.getElementById('fiber');
@@ -223,6 +244,7 @@
 
   setTeamOptionsForFiber('');
   updateButtons();
+  updateCounterView();
 
   fiberEl.addEventListener('change', () => {
     setTeamOptionsForFiber(fiberEl.value);
@@ -293,6 +315,10 @@
       urlAndEl.textContent = rawUrl;
 
       outEl.style.display = 'block';
+
+      /* ✅ HIER wird gezählt (nur bei Erfolg) */
+      incrementCount();
+
     }catch(e){
       setError('Fehler: ' + (e && e.message ? e.message : String(e)));
     }finally{
@@ -303,5 +329,6 @@
 
 })();
 </script>
+
 </body>
 </html>
