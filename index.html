@@ -138,6 +138,16 @@
     }
   }
 
+  
+  async function loadGlobalCounter(){
+    try{
+      const res = await fetch('/counter?mode=view&key=huhtamaki_generator', { cache: 'no-store' });
+      if(!res.ok) return;
+      const data = await res.json();
+      updateCounterView(data.value);
+    }catch(e){}
+  }
+
   function updateCounterView(value){
     const el = document.getElementById('genCounter');
     if(el && typeof value === 'number'){
@@ -246,6 +256,7 @@
 
   setTeamOptionsForFiber('');
   updateButtons();
+  loadGlobalCounter();
   updateCounterView();
 
   fiberEl.addEventListener('change', () => {
