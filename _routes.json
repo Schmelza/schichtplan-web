@@ -1,11 +1,12 @@
 {
   "version": 1,
   "include": [
-    "/generate",
-    "/ics",
-    "/printv1",
-    "/printv2",
-    "/range"
+    "/counter*",
+    "/generate*",
+    "/ics*",
+    "/printv1*",
+    "/printv2*",
+    "/range*"
   ],
   "exclude": []
 }
