@@ -1,6 +1,9 @@
 <!doctype html>
 <html lang="de">
 <head>
+  <link rel="icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Schichtkalender (ICS) – Web Generator</title>
@@ -126,38 +129,26 @@
 <script>
 (function(){
 
-  /* ================= GLOBAL COUNTER ================= */
-  async function incrementGlobalCounter(){
-    try{
-      const res = await fetch('/counter?mode=inc&key=huhtamaki_generator', { cache: 'no-store' });
-      if(!res.ok) throw new Error('Counter HTTP ' + res.status);
-      const data = await res.json();
-      updateCounterView(data.value);
-    }catch(e){
-      console.warn('Counter Fehler:', e);
-    }
+  /* ================= COUNTER ================= */
+  const COUNTER_KEY = 'huhtamaki_generator_count';
+
+  function getCount(){
+    return Number(localStorage.getItem(COUNTER_KEY) || 0);
   }
 
-  
-  async function loadGlobalCounter(){
-    try{
-      const res = await fetch('/counter?mode=view&key=huhtamaki_generator', { cache: 'no-store' });
-      if(!res.ok) return;
-      const data = await res.json();
-      updateCounterView(data.value);
-    }catch(e){}
+  function incrementCount(){
+    const c = getCount() + 1;
+    localStorage.setItem(COUNTER_KEY, c);
+    updateCounterView();
   }
 
-  function updateCounterView(value){
+  function updateCounterView(){
     const el = document.getElementById('genCounter');
-    if(el && typeof value === 'number'){
-      el.textContent = 'Generierungen insgesamt: ' + value;
+    if(el){
+      el.textContent = 'Generierungen insgesamt: ' + getCount();
     }
   }
-  /* ================================================ */
-
-
-  
+  /* =========================================== */
 
   const MIN_YEAR = 2026;
 
@@ -256,7 +247,6 @@
 
   setTeamOptionsForFiber('');
   updateButtons();
-  loadGlobalCounter();
   updateCounterView();
 
   fiberEl.addEventListener('change', () => {
@@ -330,7 +320,7 @@
       outEl.style.display = 'block';
 
       /* ✅ HIER wird gezählt (nur bei Erfolg) */
-      incrementGlobalCounter();
+      incrementCount();
 
     }catch(e){
       setError('Fehler: ' + (e && e.message ? e.message : String(e)));
