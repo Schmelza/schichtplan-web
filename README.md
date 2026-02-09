@@ -14,3 +14,11 @@ Darüber hinaus noch 2 Verschiedene Druckvarianten im A4 Querformat
 Monate untereinander | Monate nebeneinander
 
 Sollten euch Fehler auffallen dürft ihr diese gerne behalten ;)
+
+## Cloudflare Setup
+
+- Pages Project: schichtplan-web
+- KV Namespace: COUNTER_KV
+- KV Binding:
+  - Variable: COUNTER_KV
+- Domain: schichtplan-web.pages.dev
