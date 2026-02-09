@@ -129,26 +129,38 @@
 <script>
 (function(){
 
-  /* ================= COUNTER ================= */
-  const COUNTER_KEY = 'huhtamaki_generator_count';
-
-  function getCount(){
-    return Number(localStorage.getItem(COUNTER_KEY) || 0);
-  }
-
-  function incrementCount(){
-    const c = getCount() + 1;
-    localStorage.setItem(COUNTER_KEY, c);
-    updateCounterView();
-  }
-
-  function updateCounterView(){
-    const el = document.getElementById('genCounter');
-    if(el){
-      el.textContent = 'Generierungen insgesamt: ' + getCount();
+  /* ================= GLOBAL COUNTER ================= */
+  async function incrementGlobalCounter(){
+    try{
+      const res = await fetch('/counter?mode=inc&key=huhtamaki_generator', { cache: 'no-store' });
+      if(!res.ok) throw new Error('Counter HTTP ' + res.status);
+      const data = await res.json();
+      updateCounterView(data.value);
+    }catch(e){
+      console.warn('Counter Fehler:', e);
     }
   }
-  /* =========================================== */
+
+  
+  async function loadGlobalCounter(){
+    try{
+      const res = await fetch('/counter?mode=view&key=huhtamaki_generator', { cache: 'no-store' });
+      if(!res.ok) return;
+      const data = await res.json();
+      updateCounterView(data.value);
+    }catch(e){}
+  }
+
+  function updateCounterView(value){
+    const el = document.getElementById('genCounter');
+    if(el && typeof value === 'number'){
+      el.textContent = 'Generierungen insgesamt: ' + value;
+    }
+  }
+  /* ================================================ */
+
+
+  
 
   const MIN_YEAR = 2026;
 
@@ -247,6 +259,7 @@
 
   setTeamOptionsForFiber('');
   updateButtons();
+  loadGlobalCounter();
   updateCounterView();
 
   fiberEl.addEventListener('change', () => {
@@ -320,7 +333,7 @@
       outEl.style.display = 'block';
 
       /* ✅ HIER wird gezählt (nur bei Erfolg) */
-      incrementCount();
+      incrementGlobalCounter();
 
     }catch(e){
       setError('Fehler: ' + (e && e.message ? e.message : String(e)));
