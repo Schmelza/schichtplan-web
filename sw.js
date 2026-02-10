@@ -1,6 +1,7 @@
-const CACHE_NAME = "schichtplan-pwa-v3";
+const CACHE_NAME = "schichtplan-pwa-v4";
 
 self.addEventListener("install", (event) => {
+  // We intentionally do not pre-cache to avoid stale UI/counter issues.
   event.waitUntil(self.skipWaiting());
 });
 
@@ -11,7 +12,7 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
-  // NIE APIs cachen
+  // Never touch your API/function routes (always network)
   if (
     url.pathname.startsWith("/counter") ||
     url.pathname.startsWith("/generate") ||
@@ -23,7 +24,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Für HTML immer NETZ zuerst
+  // For HTML navigations: network-first (no caching)
   if (event.request.mode === "navigate") {
     event.respondWith(fetch(event.request));
     return;
