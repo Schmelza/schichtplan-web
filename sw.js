@@ -1,35 +1,17 @@
-const CACHE_NAME = "schichtplan-pwa-v2";
-const ASSETS = [
-  "/",
-  "/index.html",
-  "/favicon.ico",
-  "/apple-touch-icon.png",
-  "/manifest.webmanifest",
-  "/pwa-192.png",
-  "/pwa-512.png",
-  "/pwa-192-maskable.png",
-  "/pwa-512-maskable.png"
-];
+const CACHE_NAME = "schichtplan-pwa-v3";
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting())
-  );
+  event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    ).then(() => self.clients.claim())
-  );
+  event.waitUntil(self.clients.claim());
 });
 
 self.addEventListener("fetch", (event) => {
-  const req = event.request;
-  const url = new URL(req.url);
+  const url = new URL(event.request.url);
 
-  // Never cache API/function routes (always network)
+  // NIE APIs cachen
   if (
     url.pathname.startsWith("/counter") ||
     url.pathname.startsWith("/generate") ||
@@ -41,5 +23,9 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  event.respondWith(caches.match(req).then((cached) => cached || fetch(req)));
+  // Für HTML immer NETZ zuerst
+  if (event.request.mode === "navigate") {
+    event.respondWith(fetch(event.request));
+    return;
+  }
 });
