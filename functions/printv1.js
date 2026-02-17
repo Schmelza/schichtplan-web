@@ -125,10 +125,35 @@ const printTitle = title;
   .s{background:${SHIFT_COLORS["S"]}}
   .n{background:${SHIFT_COLORS["N"]}}
 
+  /* Print toolbar (hidden on paper) */
+  .topbar{
+    position:fixed;
+    top:10px; left:10px;
+    z-index:99999;
+    display:flex;
+    gap:10px;
+    pointer-events:auto;
+  }
+  .topbar button{
+    padding:10px 12px;
+    border:1px solid #000;
+    background:#fff;
+    color:#000;
+    border-radius:10px;
+    font-size:14px;
+    pointer-events:auto;
+  }
+  .topbar button:active{ transform: translateY(1px); }
   @media print{ .topbar{ display:none !important; } }
+
 </style>
 </head>
 <body class="readonly">
+<div class="topbar" role="toolbar" aria-label="Druck-Tools">
+  <button type="button" onclick="(function(){ try{ if(history.length>1){ history.back(); } else { location.href='/'; } }catch(e){ location.href='/'; } })()">← Zurück</button>
+  <button id="printBtn" type="button" onclick="(function(){ try{ window.print(); }catch(e){} })()">🖨️ Drucken</button>
+  <button id="reloadBtn" type="button" onclick="(function(){try{var u=new URL(location.href);u.searchParams.set('_r',String(Date.now()));location.href=u.toString();}catch(e){location.reload();}})()">🔄 Neu laden</button>
+</div>
 <div class="page">
   <div class="top">
     <div>
@@ -157,7 +182,6 @@ const printTitle = title;
 
 <script>
   try{ document.title = ${JSON.stringify(printTitle)}; }catch(e){}
-  setTimeout(() => { try{ window.print(); }catch(e){} }, 250);
 </script>
 </body>
 </html>`;
