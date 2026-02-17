@@ -169,9 +169,7 @@ const printTitle = title;
 </div>
 
 <script>
-  // Auto-open print dialog
   try{ document.title = ${JSON.stringify(printTitle)}; }catch(e){}
-  setTimeout(() => { try{ window.print(); }catch(e){} }, 250);
 </script>
 </body>
 </html>`;
