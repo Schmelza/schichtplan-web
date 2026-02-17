@@ -308,18 +308,32 @@
       const rawUrl = data.raw_url || icsUrl;
       const webcalUrl = data.webcal_url || (location.origin.replace('https://','webcal://') + icsUrl);
 
-      const mkA = (href, text) => {
+      const isStandalone = (
+        (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+        (window.navigator && window.navigator.standalone === true)
+      );
+
+      const mkA = (href, text, opts={}) => {
         const a = document.createElement('a');
         a.href = href;
-        a.target = '_blank';
-        a.rel = 'noopener';
         a.textContent = text;
+
+        // In iOS PWA (standalone) opening calendar files via new tabs triggers permission prompts.
+        // Use same-window navigation for calendar related links.
+        const forceSelf = !!opts.self || (isStandalone && !!opts.calendar);
+
+        a.target = forceSelf ? '_self' : '_blank';
+        a.rel = forceSelf ? '' : 'noopener';
+
+        if (opts.download) a.setAttribute('download', '');
         return a;
       };
 
-      linksEl.appendChild(mkA(icsUrl, 'ICS (iOS/Android)'));
-      linksEl.appendChild(mkA(rawUrl, 'RAW (ios/Android)'));
-      linksEl.appendChild(mkA(webcalUrl, 'Kalender Abo (iOS/Android)'));
+            // Downloads / Links
+      linksEl.appendChild(mkA(icsUrl, 'ICS herunterladen (iOS/Android)', {calendar:true, self:true}));
+      linksEl.appendChild(mkA(rawUrl, 'RAW herunterladen (iOS/Android)', {calendar:true, self:true}));
+      linksEl.appendChild(mkA(webcalUrl, 'Kalender abonnieren (iOS)', {calendar:true, self:true}));
+
 
       const qrBase = 'https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=';
       qrIosImg.src = qrBase + encodeURIComponent(webcalUrl);
