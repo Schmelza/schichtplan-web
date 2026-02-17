@@ -124,10 +124,27 @@ const printTitle = title;
   .f{background:${SHIFT_COLORS["F"]}}
   .s{background:${SHIFT_COLORS["S"]}}
   .n{background:${SHIFT_COLORS["N"]}}
+
+  /* PWA/iOS Print: allow returning without closing the app */
+  .backbtn{
+    position:fixed;
+    top:10px; left:10px;
+    z-index:9999;
+    padding:10px 12px;
+    border:1px solid #000;
+    background:#fff;
+    color:#000;
+    border-radius:10px;
+    font-size:14px;
+  }
+  .backbtn:active{ transform: translateY(1px); }
+  @media print{ .backbtn{ display:none !important; } }
+
 </style>
 </head>
 <body class="readonly">
 <div class="page">
+  <button class="backbtn" type="button" onclick="(function(){ try{ if(history.length>1){ history.back(); } else { location.href='/'; } }catch(e){ location.href='/'; } })()">← Zurück</button>
   <div class="top">
     <div>
       <h1>${safeHtml(title)}</h1>
@@ -155,6 +172,25 @@ const printTitle = title;
 
 <script>
   try{ document.title = ${JSON.stringify(printTitle)}; }catch(e){}
+
+  function exitPrint(){
+    try{
+      if (history.length > 1) { history.back(); }
+      else { location.href = "/"; }
+    }catch(e){
+      location.href = "/";
+    }
+  }
+
+  // iOS PWA sometimes "traps" on the print page. Try multiple safe exits.
+  window.onafterprint = exitPrint;
+
+  // If the print dialog closes and focus returns, also exit.
+  window.addEventListener("focus", () => {
+    // small delay so iOS can settle
+    setTimeout(exitPrint, 150);
+  }, { once: true });
+
   setTimeout(() => { try{ window.print(); }catch(e){} }, 250);
 </script>
 </body>
