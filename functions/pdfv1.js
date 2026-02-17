@@ -40,7 +40,7 @@ function pdfEscape(str){
     // Map anything in 0..255 to a single byte using octal escape
     if (code <= 0xFF) {
       const oct = code.toString(8).padStart(3, "0");
-      out += "\" + oct;
+      out += "\\" + oct;
       continue;
     }
 
