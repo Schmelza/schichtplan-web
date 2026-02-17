@@ -66,6 +66,8 @@ function buildPdf({ title, printedBy, telLines, drawContent }){
   function stroke(){ push("S"); }
   function fillStroke(){ push("B"); }
   function text(x,y,size,str){
+    // Ensure text is always black for readability
+    push("0 0 0 rg");
     push("BT");
     push(`/F1 ${fmt(size)} Tf`);
     push(`${fmt(x)} ${fmt(y)} Td`);
