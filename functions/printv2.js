@@ -141,11 +141,15 @@ const printTitle = title;
     .legend span{padding:3px 8px; margin:0 4px}
   }
 
-  /* PWA/iOS Print: allow returning without closing the app */
-  .backbtn{
+  /* PWA/iOS Print helpers */
+  .topbar{
     position:fixed;
     top:10px; left:10px;
     z-index:9999;
+    display:flex;
+    gap:10px;
+  }
+  .topbar button{
     padding:10px 12px;
     border:1px solid #000;
     background:#fff;
@@ -153,14 +157,17 @@ const printTitle = title;
     border-radius:10px;
     font-size:14px;
   }
-  .backbtn:active{ transform: translateY(1px); }
-  @media print{ .backbtn{ display:none !important; } }
+  .topbar button:active{ transform: translateY(1px); }
+  @media print{ .topbar{ display:none !important; } }
 
 </style>
 </head>
 <body class="readonly">
 <div class="page">
-  <button class="backbtn" type="button" onclick="(function(){ try{ if(history.length>1){ history.back(); } else { location.href='/'; } }catch(e){ location.href='/'; } })()">← Zurück</button>
+  <div class="topbar">
+    <button type="button" onclick="(function(){ try{ if(history.length>1){ history.back(); } else { location.href='/'; } }catch(e){ location.href='/'; } })()">← Zurück</button>
+    <button id="printBtn" type="button" onclick="(function(){ try{ window.print(); }catch(e){} })()">🖨️ Drucken</button>
+  </div>
   <div class="top">
     <div>
       <h1>${safeHtml(title)}</h1>
@@ -186,26 +193,8 @@ const printTitle = title;
 </div>
 
 <script>
+  // Auto-open print dialog
   try{ document.title = ${JSON.stringify(printTitle)}; }catch(e){}
-
-  function exitPrint(){
-    try{
-      if (history.length > 1) { history.back(); }
-      else { location.href = "/"; }
-    }catch(e){
-      location.href = "/";
-    }
-  }
-
-  // iOS PWA sometimes "traps" on the print page. Try multiple safe exits.
-  window.onafterprint = exitPrint;
-
-  // If the print dialog closes and focus returns, also exit.
-  window.addEventListener("focus", () => {
-    // small delay so iOS can settle
-    setTimeout(exitPrint, 150);
-  }, { once: true });
-
   setTimeout(() => { try{ window.print(); }catch(e){} }, 250);
 </script>
 </body>
