@@ -124,36 +124,9 @@ const printTitle = title;
   .f{background:${SHIFT_COLORS["F"]}}
   .s{background:${SHIFT_COLORS["S"]}}
   .n{background:${SHIFT_COLORS["N"]}}
-
-  /* Print toolbar (hidden on paper) */
-  .topbar{
-    position:fixed;
-    top:10px; left:10px;
-    z-index:99999;
-    display:flex;
-    gap:10px;
-    pointer-events:auto;
-  }
-  .topbar button{
-    padding:10px 12px;
-    border:1px solid #000;
-    background:#fff;
-    color:#000;
-    border-radius:10px;
-    font-size:14px;
-    pointer-events:auto;
-  }
-  .topbar button:active{ transform: translateY(1px); }
-  @media print{ .topbar{ display:none !important; } }
-
 </style>
 </head>
 <body class="readonly">
-<div class="topbar" role="toolbar" aria-label="Druck-Tools">
-    <button type="button" onclick="(function(){ try{ if(history.length>1){ history.back(); } else { location.href='/'; } }catch(e){ location.href='/'; } })()">← Zurück</button>
-    <button type="button" onclick="(function(){ try{ window.print(); }catch(e){} })()">🖨️ Drucken</button>
-  </div>
-
 <div class="page">
   <div class="top">
     <div>
@@ -183,17 +156,28 @@ const printTitle = title;
 <script>
   try{ document.title = ${JSON.stringify(printTitle)}; }catch(e){}
 
-  function exitPrint(){
-    try{
-      if (history.length > 1) { history.back(); }
-      else { location.href = "/"; }
-    }catch(e){
-      location.href = "/";
-    }
-  }
+  // iOS can show an "allow automatic printing" prompt when printing multiple times in a row.
+  // Workaround: after the first print, switch the button to "Reload" so the next print happens on a fresh page.
+  let printedOnce = false;
+  const btn = document.getElementById("printBtn");
+  if (btn) {
+    const originalLabel = btn.textContent || "🖨️ Drucken";
+    btn.addEventListener("click", (e) => {
+      if (printedOnce) {
+        // fresh reload prevents iOS from treating repeated prints as "automatic"
+        location.reload();
+        return;
+      }
+      // first print is always user-initiated
+      try{ window.print(); }catch(err){}
+    }, true);
 
-  // After printing (or cancel), go back to the app.
-  window.onafterprint = exitPrint;
+    window.onafterprint = () => {
+      printedOnce = true;
+      btn.textContent = "🔄 Neu laden (erneut drucken)";
+      btn.setAttribute("aria-label", "Neu laden, um erneut zu drucken");
+    };
+  }
 </script>
 </body>
 </html>`;
