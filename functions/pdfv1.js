@@ -205,9 +205,21 @@ export async function onRequestGet({ request }) {
       setLineWidth(1);
       rect(boxX, boxY, boxW, boxH);
       stroke();
-      text(boxX + 10, boxY + 28, 9.5, telLines[0]);
-      text(boxX + 10, boxY + 16, 9.5, telLines[1]);
-      text(boxX + 10, boxY + 4,  9.5, telLines[2]);
+      
+function centerInBox(line, yOffset){
+  const tw = line.length * 4.6;
+  text(
+    boxX + boxW/2 - tw/2,
+    boxY + yOffset,
+    9.5,
+    line
+  );
+}
+
+centerInBox(telLines[0], 28);
+centerInBox(telLines[1], 16);
+centerInBox(telLines[2], 4);
+
 
       // Table geometry
       const rows = 12 * 3; // 36
