@@ -190,9 +190,8 @@ export async function onRequestGet({ request }) {
       // Header
       setFillRGB(0,0,0); setStrokeRGB(0,0,0);
       text(w/2 - (title.length*4.2), h - margin - 24, 18, title);
-      text(w/2 - (printedBy.length*2.6), h - margin - 42, 11, printedBy);
-
-      // Tel box right
+      text(margin, h - margin - 42, 11, printedBy);
+// Tel box right
       const boxW = 190, boxH = 44;
       const boxX = w - margin - boxW;
       const boxY = h - margin - boxH - 8;
@@ -242,8 +241,9 @@ centerPhone(telLines[2], 4);
         stroke();
 
         clipRect(x, y - headerRowH, monthWidth, headerRowH);
-        text(x + 4, y - headerRowH + 4, 10.5, MONTHS_DE[m]);
-        restore();
+        const mw = MONTHS_DE[m].length * 4.6;
+        text(x + monthWidth/2 - mw/2, y - headerRowH + 4, 10.5, MONTHS_DE[m]);
+restore();
       }
       y -= headerRowH;
 
@@ -296,8 +296,9 @@ centerPhone(telLines[2], 4);
             rect(txtX, rowYBottom, txtW, rowH); stroke();
           }
           // weekday text
-          text(txtX + 4, rowYBottom + rowH/2 - 3.5, 9.5, dayName);
-        }
+          const dw = dayName.length * 3.6;
+          text(txtX + txtW/2 - dw/2, rowYBottom + rowH/2 - 3.5, 9.5, dayName);
+}
         y -= rowH;
       }
 
@@ -308,7 +309,9 @@ centerPhone(telLines[2], 4);
 
       // Legend
       const legY = margin + 6;
-      const legX = margin + usableW/2 - 170;
+      const gap = 10;
+      const legendTotalW = 70 + 60 + 55 + 55 + 70 + gap*4;
+      const legX = margin + usableW/2 - legendTotalW/2;
       const box = (x, y, w, h, fillHex, label) => {
         const [r,g,b] = rgbHexTo01(fillHex);
         setFillRGB(r,g,b); rect(x,y,w,h); fill();
@@ -317,10 +320,10 @@ centerPhone(telLines[2], 4);
       text(x + w/2 - lw/2, y + 4, 9.5, label);
       };
       box(legX, legY, 70, 16, HOLIDAY_BG, "Feiertag");
-      box(legX+80, legY, 60, 16, VACATION_BG, "Ferien");
-      box(legX+150, legY, 55, 16, SHIFT_COLORS["F"], "F = Früh");
-      box(legX+210, legY, 55, 16, SHIFT_COLORS["S"], "S = Spät");
-      box(legX+270, legY, 70, 16, SHIFT_COLORS["N"], "N = Nacht");
+      box(legX + 70 + gap, legY, 60, 16, VACATION_BG, "Ferien");
+      box(legX + 70 + gap + 60 + gap, legY, 55, 16, SHIFT_COLORS["F"], "F = Früh");
+      box(legX + 70 + gap + 60 + gap + 55 + gap, legY, 55, 16, SHIFT_COLORS["S"], "S = Spät");
+      box(legX + 70 + gap + 60 + gap + 55 + gap + 55 + gap, legY, 70, 16, SHIFT_COLORS["N"], "N = Nacht");
     }
   });
 
