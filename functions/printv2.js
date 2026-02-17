@@ -141,7 +141,7 @@ const printTitle = title;
     .legend span{padding:3px 8px; margin:0 4px}
   }
 
-  /* PWA/iOS Print helpers */
+  /* Print toolbar (hidden on paper) */
   .topbar{
     position:fixed;
     top:10px; left:10px;
@@ -167,7 +167,7 @@ const printTitle = title;
 <body class="readonly">
 <div class="topbar" role="toolbar" aria-label="Druck-Tools">
     <button type="button" onclick="(function(){ try{ if(history.length>1){ history.back(); } else { location.href='/'; } }catch(e){ location.href='/'; } })()">← Zurück</button>
-    <button id="printBtn" type="button" onclick="(function(){ try{ window.print(); }catch(e){} })()">🖨️ Drucken</button>
+    <button type="button" onclick="(function(){ try{ window.print(); }catch(e){} })()">🖨️ Drucken</button>
   </div>
 
 <div class="page">
@@ -196,7 +196,6 @@ const printTitle = title;
 </div>
 
 <script>
-  // Auto-open print dialog
   try{ document.title = ${JSON.stringify(printTitle)}; }catch(e){}
 
   function exitPrint(){
@@ -207,18 +206,10 @@ const printTitle = title;
       location.href = "/";
     }
   }
-  window.onafterprint = exitPrint;
-const ua = navigator.userAgent || "";
-  const isIOS = /iPad|iPhone|iPod/.test(ua) || (ua.includes("Mac") && "ontouchend" in document);
 
-  // iOS (especially standalone/PWA) sometimes doesn't fire onafterprint reliably.
-  // Only enable the focus fallback on iOS to avoid Firefox/desktop immediately navigating back.
-  if (isIOS) {
-    window.addEventListener("focus", () => {
-      setTimeout(exitPrint, 150);
-    }, { once: true });
-  }
-  </script>
+  // After printing (or cancel), go back to the app.
+  window.onafterprint = exitPrint;
+</script>
 </body>
 </html>`;
 
