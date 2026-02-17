@@ -34,9 +34,10 @@ export async function onRequestGet({ request }) {
 
   const ferienSet = await getFerienSetForYear(year);
 
-  const tel = (fiber === 1 ? TEL.fiber1 : TEL.fiber2);
-  const title = `Schichtplan ${year} – Fiber ${fiber} – Team P${team} (${teamLabel(team)}) – V1`;
-  const printTitle = `${title} (V1)`;
+const tel = (fiber === 1 ? TEL.fiber1 : TEL.fiber2);
+const title = `Schichtplan ${year} – Fiber ${fiber} - P${team}`;
+const printTitle = title;
+
 
   // Like Excel "V1": 12 months stacked; each month 3 rows: Wochentag, Tag (colored holiday/vac), Schicht (colored F/S/N)
   let monthsHtml = "";
@@ -123,6 +124,8 @@ export async function onRequestGet({ request }) {
   .f{background:${SHIFT_COLORS["F"]}}
   .s{background:${SHIFT_COLORS["S"]}}
   .n{background:${SHIFT_COLORS["N"]}}
+
+  @media print{ .topbar{ display:none !important; } }
 </style>
 </head>
 <body class="readonly">
