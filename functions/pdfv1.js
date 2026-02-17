@@ -1,168 +1,330 @@
+
 import { clampAllowedYear, parseIntParam, shiftForDate, isHolidayRLP, getFerienSetForYear, isFerien, TEL } from "./_common.js";
 
-const SHIFT_COLORS = {
-  "F": [255,255,0],
-  "S": [255,0,0],
-  "N": [0,176,240],
-};
+const SHIFT_COLORS = { "F": "#ffff00", "S": "#ff0000", "N": "#00b0f0" };
+const HOLIDAY_BG = "#ffc8c8";
+const VACATION_BG = "#c8dcff";
+const HEADER_BG  = "#c6e0b4";
 
-const HOLIDAY_BG = [255,200,200];
-const VACATION_BG = [200,220,255];
-const MONTH_BG = [198,224,180];
-
-const DAYS_DE = ["So","Mo","Di","Mi","Do","Fr","Sa"];
+const WD2 = ["So","Mo","Di","Mi","Do","Fr","Sa"];
 const MONTHS_DE = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
 
-function pdfEscape(text){
-  return String(text)
-    .replace(/\\/g,"\\\\")
-    .replace(/\(/g,"\\(")
-    .replace(/\)/g,"\\)");
+function shiftLetter(shift){
+  const s = String(shift||"").toLowerCase();
+  if (s === "früh") return "F";
+  if (s === "spät") return "S";
+  if (s === "nacht") return "N";
+  return "";
 }
 
+
+// Minimal PDF generator (no deps) for consistent A4 landscape output.
+const A4_LANDSCAPE = { w: 842, h: 595 }; // points (1/72 inch)
+
+function pdfEscape(str){
+  // PDF strings are byte-strings for the built-in fonts (WinAnsi). We keep the PDF file UTF-8,
+  // but encode non-ASCII characters as octal escapes so they render correctly (ÄÖÜäöüß© etc.).
+  const s = String(str ?? "");
+  let out = "";
+  for (let i = 0; i < s.length; i++) {
+    const code = s.charCodeAt(i);
+
+    // Escape special PDF string chars
+    if (code === 0x5C) { out += "\\\\"; continue; } // backslash
+    if (code === 0x28) { out += "\\("; continue; }  // (
+    if (code === 0x29) { out += "\\)"; continue; }  // )
+
+    // ASCII is safe as-is
+    if (code >= 0x20 && code <= 0x7E) { out += s[i]; continue; }
+
+    // Map anything in 0..255 to a single byte using octal escape
+    if (code <= 0xFF) {
+      const oct = code.toString(8).padStart(3, "0");
+      out += "\\" + oct;
+      continue;
+    }
+
+    // Fallback for characters outside WinAnsi
+    out += "?";
+  }
+  return out;
+}
+
+function rgbHexTo01(hex){
+  const h = String(hex||"").replace("#","").trim();
+  if (h.length !== 6) return [0,0,0];
+  const r = parseInt(h.slice(0,2),16)/255;
+  const g = parseInt(h.slice(2,4),16)/255;
+  const b = parseInt(h.slice(4,6),16)/255;
+  return [r,g,b];
+}
+
+function fmt(n){ return (Math.round(n*1000)/1000).toString(); }
+
+function buildPdf({ title, printedBy, telLines, drawContent }){
+  const { w, h } = A4_LANDSCAPE;
+
+  // PDF objects
+  const objects = [];
+  const offsets = [];
+
+  function addObject(str){
+    objects.push(str);
+    return objects.length; // 1-based obj number
+  }
+
+  // Font object (Helvetica)
+  const fontObj = addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
+
+  // Content stream placeholder; fill later
+  let content = "";
+  const ops = [];
+  const push = (s)=>ops.push(s);
+
+  // Graphics helpers
+  function setStrokeRGB(r,g,b){ push(`${fmt(r)} ${fmt(g)} ${fmt(b)} RG`); }
+  function setFillRGB(r,g,b){ push(`${fmt(r)} ${fmt(g)} ${fmt(b)} rg`); }
+  function setLineWidth(w){ push(`${fmt(w)} w`); }
+  function rect(x,y,w,h){ push(`${fmt(x)} ${fmt(y)} ${fmt(w)} ${fmt(h)} re`); }
+  function fill(){ push("f"); }
+  function stroke(){ push("S"); }
+  function fillStroke(){ push("B"); }
+  function text(x,y,size,str){
+    // Ensure text is always black for readability
+    push("0 0 0 rg");
+    push("BT");
+    push(`/F1 ${fmt(size)} Tf`);
+    push(`${fmt(x)} ${fmt(y)} Td`);
+    push(`(${pdfEscape(str)}) Tj`);
+    push("ET");
+  }
+  function clipRect(x,y,w,h){
+    push("q");
+    rect(x,y,w,h);
+    push("W n");
+  }
+  function restore(){ push("Q"); }
+
+  // Draw page content via callback
+  drawContent({
+    w, h,
+    setStrokeRGB, setFillRGB, setLineWidth, rect, fill, stroke, fillStroke, text, clipRect, restore,
+    rgbHexTo01,
+    title, printedBy, telLines
+  });
+
+  content = ops.join("\n");
+  const contentStream = `<< /Length ${content.length} >>\nstream\n${content}\nendstream`;
+  const contentObj = addObject(contentStream);
+
+  // Page / Pages / Catalog
+  const pageObjNum = objects.length + 1;
+  const pagesObjNum = objects.length + 2;
+  const catalogObjNum = objects.length + 3;
+
+  const pageObj = `<< /Type /Page /Parent ${pagesObjNum} 0 R /MediaBox [0 0 ${w} ${h}] /Resources << /Font << /F1 ${fontObj} 0 R >> >> /Contents ${contentObj} 0 R >>`;
+  objects.push(pageObj);
+
+  const pagesObj = `<< /Type /Pages /Kids [${pageObjNum} 0 R] /Count 1 >>`;
+  objects.push(pagesObj);
+
+  const catalogObj = `<< /Type /Catalog /Pages ${pagesObjNum} 0 R >>`;
+  objects.push(catalogObj);
+
+  // Build xref
+  let pdf = "%PDF-1.4\n";
+  offsets.push(0); // object 0
+  for (let i=0;i<objects.length;i++){
+    offsets.push(pdf.length);
+    pdf += `${i+1} 0 obj\n${objects[i]}\nendobj\n`;
+  }
+  const xrefStart = pdf.length;
+  pdf += "xref\n";
+  pdf += `0 ${objects.length+1}\n`;
+  pdf += "0000000000 65535 f \n";
+  for (let i=1;i<offsets.length;i++){
+    const off = String(offsets[i]).padStart(10,"0");
+    pdf += `${off} 00000 n \n`;
+  }
+  pdf += "trailer\n";
+  pdf += `<< /Size ${objects.length+1} /Root ${catalogObjNum} 0 R >>\n`;
+  pdf += "startxref\n";
+  pdf += `${xrefStart}\n%%EOF`;
+
+  return new TextEncoder().encode(pdf);
+}
+
+
 export async function onRequestGet({ request }) {
-
   const url = new URL(request.url);
-  const fiber = parseIntParam(url,"fiber");
-  const team  = parseIntParam(url,"team");
-  const year  = parseIntParam(url,"year");
+  const fiber = parseIntParam(url, "fiber");
+  const team  = parseIntParam(url, "team");
+  const year  = parseIntParam(url, "year");
 
-  if(!fiber||!team||!year) return new Response("Missing params",{status:400});
+  if (!fiber || !team || !year) return new Response("Missing params: fiber, team, year", { status: 400 });
 
   const yr = clampAllowedYear(year);
-  if(!yr.ok) return new Response("Invalid year",{status:400});
+  if (!yr.ok) return new Response(`year muss ${yr.minYear} bis ${yr.maxYear} sein`, { status: 400 });
 
   const ferienSet = await getFerienSetForYear(year);
-  const tel = (fiber===1?TEL.fiber1:TEL.fiber2);
 
+  const tel = (fiber === 1 ? TEL.fiber1 : TEL.fiber2);
   const title = `Schichtplan ${year}  Fiber ${fiber} - P${team}`;
+  const printedBy = "Printed by: Johannes Trippen©";
+  const telLines = [tel.b, tel.m, tel.t];
 
-  const width = 842;
-  const height = 595;
-  let y = height - 40;
+  const pdfBytes = buildPdf({
+    title,
+    printedBy,
+    telLines,
+    drawContent: ({ w, h, setStrokeRGB, setFillRGB, setLineWidth, rect, fillStroke, fill, stroke, text, clipRect, restore, rgbHexTo01 }) => {
+      const margin = 24;
+      const headerH = 62;
+      const legendH = 26;
+      const tableTopY = h - margin - headerH;
+      const tableBottomY = margin + legendH + 10;
+      const tableH = tableTopY - tableBottomY;
+      const usableW = w - margin*2;
 
-  let objects = [];
-  let contentStream = "";
+      // Header
+      setFillRGB(0,0,0); setStrokeRGB(0,0,0);
+      text(w/2 - (title.length*4.2), h - margin - 24, 18, title);
+      text(margin + monthColW + 6, h - margin - 42, 11, printedBy);
 
-  function text(x,y,size,str,align="left"){
-    const esc = pdfEscape(str);
-    if(align==="center"){
-      contentStream += `BT /F1 ${size} Tf ${x} ${y} Td (${esc}) Tj ET\n`;
-    } else {
-      contentStream += `BT /F1 ${size} Tf ${x} ${y} Td (${esc}) Tj ET\n`;
+      // Tel box right
+      const boxW = 190, boxH = 44;
+      const boxX = w - margin - boxW;
+      const boxY = h - margin - boxH - 8;
+      setLineWidth(1);
+      rect(boxX, boxY, boxW, boxH);
+      stroke();
+      text(boxX + (boxW/2) - (telLines[0].length*2.2), boxY + 28, 9.5, telLines[0]);
+      text(boxX + (boxW/2) - (telLines[1].length*2.2), boxY + 16, 9.5, telLines[1]);
+      text(boxX + (boxW/2) - (telLines[2].length*2.2), boxY + 4,  9.5, telLines[2]);
+
+      // Table geometry
+      const rows = 12 * 3; // 36
+      const rowH = tableH / rows;
+      const monthColW = 72;
+      const dayColW = (usableW - monthColW) / 31;
+
+      const startX = margin;
+      let y = tableTopY;
+
+      // Background header band not used (v1 has none) - keep clean
+      setLineWidth(0.6);
+      setStrokeRGB(0,0,0);
+
+      // Outer border
+      rect(startX, tableBottomY, usableW, tableH);
+      stroke();
+
+      // Draw grid + content
+      for (let m = 0; m < 12; m++) {
+        const monthName = MONTHS_DE[m];
+        const lastDay = new Date(Date.UTC(year, m+1, 0)).getUTCDate();
+
+        // Month label cell spans 3 rows
+        const monthSpanH = rowH * 3;
+        const monthYBottom = y - monthSpanH;
+        // Month label bg
+        const [hr,hg,hb] = rgbHexTo01(HEADER_BG);
+        setFillRGB(hr,hg,hb);
+        rect(startX, monthYBottom, monthColW, monthSpanH);
+        fill();
+        setStrokeRGB(0,0,0);
+        rect(startX, monthYBottom, monthColW, monthSpanH);
+        stroke();
+
+        // Month name centered-ish
+        clipRect(startX, monthYBottom, monthColW, monthSpanH);
+        text(startX + (monthColW/2) - (monthName.length*2.6), monthYBottom + monthSpanH/2 - 4, 10.5, monthName);
+        restore();
+
+        // 3 rows: weekday, day, shift
+        for (let r = 0; r < 3; r++) {
+          const rowYBottom = y - rowH*(r+1);
+          // Row horizontal line
+          rect(startX + monthColW, rowYBottom, usableW - monthColW, rowH);
+          stroke();
+
+          for (let d = 1; d <= 31; d++) {
+            const cellX = startX + monthColW + (d-1)*dayColW;
+            const cellY = rowYBottom;
+            // cell border
+            rect(cellX, cellY, dayColW, rowH);
+            stroke();
+
+            if (d > lastDay) continue;
+
+            const dateObj = new Date(Date.UTC(year, m, d));
+            const wd = WD2[dateObj.getUTCDay()];
+            const holiday = isHolidayRLP(dateObj);
+            const vacation = !holiday && isFerien(ferienSet, dateObj);
+
+            if (r === 1) {
+              // day number row with holiday/vacation bg
+              if (holiday || vacation) {
+                const col = holiday ? HOLIDAY_BG : VACATION_BG;
+                const [r1,g1,b1] = rgbHexTo01(col);
+                setFillRGB(r1,g1,b1);
+                rect(cellX, cellY, dayColW, rowH);
+                fill();
+                setStrokeRGB(0,0,0);
+                rect(cellX, cellY, dayColW, rowH);
+                stroke();
+              }
+              const s = String(d);
+              text(cellX + dayColW/2 - (s.length*2.8), cellY + rowH/2 - 3.5, 9.5, s);
+            } else if (r === 0) {
+              // weekday row
+              text(cellX + dayColW/2 - 4.5, cellY + rowH/2 - 3.5, 9.0, wd);
+            } else {
+              // shift row with colored bg and letter
+              const shift = shiftForDate(fiber, team, dateObj);
+              const letter = shiftLetter(shift);
+              if (letter) {
+                const [r2,g2,b2] = rgbHexTo01(SHIFT_COLORS[letter]);
+                setFillRGB(r2,g2,b2);
+                rect(cellX, cellY, dayColW, rowH);
+                fill();
+                setStrokeRGB(0,0,0);
+                rect(cellX, cellY, dayColW, rowH);
+                stroke();
+                text(cellX + dayColW/2 - 3.5, cellY + rowH/2 - 3.5, 10, letter);
+              }
+            }
+          }
+        }
+
+        // Month block bottom line
+        y -= monthSpanH;
+        // Line separating next month (already via borders)
+      }
+
+      // Legend
+      const legY = margin + 6;
+      const legX = margin + usableW/2 - 170;
+      const box = (x, y, w, h, fillHex, label) => {
+        const [r,g,b] = rgbHexTo01(fillHex);
+        setFillRGB(r,g,b); rect(x,y,w,h); fill();
+        setStrokeRGB(0,0,0); rect(x,y,w,h); stroke();
+        text(x + (w/2) - (label.length*2.2), y+4, 9.5, label);
+      };
+      box(legX, legY, 70, 16, HOLIDAY_BG, "Feiertag");
+      box(legX+80, legY, 60, 16, VACATION_BG, "Ferien");
+      box(legX+150, legY, 55, 16, SHIFT_COLORS["F"], "F = Früh");
+      box(legX+210, legY, 55, 16, SHIFT_COLORS["S"], "S = Spät");
+      box(legX+270, legY, 70, 16, SHIFT_COLORS["N"], "N = Nacht");
     }
-  }
+  });
 
-  function rect(x,y,w,h,color=null){
-    if(color){
-      contentStream += `${color[0]/255} ${color[1]/255} ${color[2]/255} rg\n`;
-      contentStream += `${x} ${y} ${w} ${h} re f\n`;
-      contentStream += `0 0 0 rg\n`;
-    } else {
-      contentStream += `${x} ${y} ${w} ${h} re S\n`;
-    }
-  }
-
-  // Titel zentriert
-  text(width/2-150,y,18,title,"center");
-  y -= 22;
-
-  // Printed by links über Monaten
-  text(60,y,11,"Printed by: Johannes Trippen©");
-  
-  // Telefonnummern oben rechts zentriert im Block
-  const phoneBlockX = width-220;
-  rect(phoneBlockX-10,y+5,180,40);
-  text(phoneBlockX+30,y+25,10,tel.b,"center");
-  text(phoneBlockX+30,y+15,10,tel.m,"center");
-  text(phoneBlockX+30,y+5,10,tel.t,"center");
-
-  y -= 35;
-
-  const startX = 60;
-  const colWidth = 20;
-  const rowHeight = 14;
-
-  for(let m=0;m<12;m++){
-    const monthY = y - (m*rowHeight*2);
-
-    rect(startX,monthY-10,80,rowHeight*2,MONTH_BG);
-    // Monatsname zentriert
-    text(startX+20,monthY,rowHeight,MONTHS_DE[m],"center");
-
-    for(let d=1;d<=31;d++){
-      const date = new Date(Date.UTC(year,m,d));
-      if(date.getUTCMonth()!==m) continue;
-
-      const x = startX+90+(d-1)*colWidth;
-
-      const holiday = isHolidayRLP(date);
-      const vacation = !holiday && isFerien(ferienSet,date);
-      const shift = shiftForDate(fiber,team,date);
-
-      let bg=null;
-      if(holiday) bg=HOLIDAY_BG;
-      if(vacation) bg=VACATION_BG;
-      if(shift) bg=SHIFT_COLORS[shift];
-
-      rect(x,monthY,colWidth,rowHeight,bg);
-      rect(x,monthY-rowHeight,colWidth,rowHeight);
-
-      text(x+4,monthY+3,8,String(d));
-      text(x+4,monthY-rowHeight+3,8,DAYS_DE[date.getUTCDay()]);
-    }
-  }
-
-  // Legende zentriert
-  const legendY = 40;
-  const legendX = width/2 - 150;
-
-  rect(legendX,legendY,60,15,HOLIDAY_BG);
-  text(legendX+10,legendY+4,9,"Feiertag");
-
-  rect(legendX+70,legendY,60,15,VACATION_BG);
-  text(legendX+80,legendY+4,9,"Ferien");
-
-  rect(legendX+140,legendY,60,15,SHIFT_COLORS["F"]);
-  text(legendX+150,legendY+4,9,"F = Früh");
-
-  rect(legendX+210,legendY,60,15,SHIFT_COLORS["S"]);
-  text(legendX+220,legendY+4,9,"S = Spät");
-
-  rect(legendX+280,legendY,60,15,SHIFT_COLORS["N"]);
-  text(legendX+290,legendY+4,9,"N = Nacht");
-
-  const pdf = `%PDF-1.4
-1 0 obj
-<< /Type /Catalog /Pages 2 0 R >>
-endobj
-2 0 obj
-<< /Type /Pages /Kids [3 0 R] /Count 1 >>
-endobj
-3 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${width} ${height}] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
-endobj
-4 0 obj
-<< /Length ${contentStream.length} >>
-stream
-${contentStream}
-endstream
-endobj
-5 0 obj
-<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
-endobj
-xref
-0 6
-0000000000 65535 f 
-trailer
-<< /Size 6 /Root 1 0 R >>
-startxref
-0
-%%EOF`;
-
-  return new Response(pdf,{
-    headers:{
-      "content-type":"application/pdf"
+  const filename = `schichtplan-${year}-fiber${fiber}-p${team}-v1.pdf`;
+  return new Response(pdfBytes, {
+    headers: {
+      "content-type": "application/pdf",
+      "content-disposition": `inline; filename="${filename}"`,
+      "cache-control": "no-store"
     }
   });
 }
