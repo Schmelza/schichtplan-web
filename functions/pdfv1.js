@@ -22,7 +22,32 @@ function shiftLetter(shift){
 const A4_LANDSCAPE = { w: 842, h: 595 }; // points (1/72 inch)
 
 function pdfEscape(str){
-  return String(str).replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
+  // PDF strings are byte-strings for the built-in fonts (WinAnsi). We keep the PDF file UTF-8,
+  // but encode non-ASCII characters as octal escapes so they render correctly (ÄÖÜäöüß© etc.).
+  const s = String(str ?? "");
+  let out = "";
+  for (let i = 0; i < s.length; i++) {
+    const code = s.charCodeAt(i);
+
+    // Escape special PDF string chars
+    if (code === 0x5C) { out += "\\"; continue; } // backslash
+    if (code === 0x28) { out += "\("; continue; }  // (
+    if (code === 0x29) { out += "\)"; continue; }  // )
+
+    // ASCII is safe as-is
+    if (code >= 0x20 && code <= 0x7E) { out += s[i]; continue; }
+
+    // Map anything in 0..255 to a single byte using octal escape
+    if (code <= 0xFF) {
+      const oct = code.toString(8).padStart(3, "0");
+      out += "\" + oct;
+      continue;
+    }
+
+    // Fallback for characters outside WinAnsi
+    out += "?";
+  }
+  return out;
 }
 
 function rgbHexTo01(hex){
