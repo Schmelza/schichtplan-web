@@ -169,7 +169,8 @@ export async function onRequestGet({ request }) {
   const ferienSet = await getFerienSetForYear(year);
 
   const tel = (fiber === 1 ? TEL.fiber1 : TEL.fiber2);
-  const title = `Schichtplan ${year} – Fiber ${fiber} - P${team}`;
+  // Use plain hyphens in the title to avoid unsupported glyphs (e.g. en-dash) showing as "?" in some PDF viewers.
+  const title = `Schichtplan ${year}  Fiber ${fiber} - P${team}`;
   const printedBy = "Printed by: Johannes Trippen©";
   const telLines = [tel.b, tel.m, tel.t];
 
@@ -186,10 +187,16 @@ export async function onRequestGet({ request }) {
       const tableH = tableTopY - tableBottomY;
       const usableW = w - margin*2;
 
+      // Table geometry (needed for left-aligned "Printed by" position)
+      const monthColW = 72;
+      const startX = margin;
+
       // Header
+      // - Title centered
+      // - "Printed by" left-aligned above the months (like the reference printout)
       setFillRGB(0,0,0); setStrokeRGB(0,0,0);
       text(w/2 - (title.length*4.2), h - margin - 24, 18, title);
-      text(w/2 - (printedBy.length*2.6), h - margin - 42, 11, printedBy);
+      text(startX + 6,            h - margin - 42, 11, printedBy);
 
       // Tel box right
       const boxW = 190, boxH = 44;
@@ -205,10 +212,8 @@ export async function onRequestGet({ request }) {
       // Table geometry
       const rows = 12 * 3; // 36
       const rowH = tableH / rows;
-      const monthColW = 72;
       const dayColW = (usableW - monthColW) / 31;
 
-      const startX = margin;
       let y = tableTopY;
 
       // Background header band not used (v1 has none) - keep clean
