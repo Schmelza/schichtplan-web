@@ -243,7 +243,13 @@ export async function onRequestGet({ request }) {
 
         // Month name centered-ish
         clipRect(startX, monthYBottom, monthColW, monthSpanH);
-        text(startX + 6, monthYBottom + monthSpanH/2 - 4, 10.5, monthName);
+        const monthTextWidth = monthName.length * 4.6;
+      text(
+        startX + monthColW/2 - monthTextWidth/2,
+        monthYBottom + monthSpanH/2 - 4,
+        10.5,
+        monthName
+      );
         restore();
 
         // 3 rows: weekday, day, shift
@@ -309,7 +315,8 @@ export async function onRequestGet({ request }) {
 
       // Legend
       const legY = margin + 6;
-      const legX = margin + usableW/2 - 170;
+      const totalLegendWidth = 70 + 10 + 60 + 10 + 55 + 10 + 55 + 10 + 70;
+    const legX = margin + usableW/2 - totalLegendWidth/2;
       const box = (x, y, w, h, fillHex, label) => {
         const [r,g,b] = rgbHexTo01(fillHex);
         setFillRGB(r,g,b); rect(x,y,w,h); fill();
