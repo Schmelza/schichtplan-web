@@ -6,7 +6,9 @@
     "/ics*",
     "/printv1*",
     "/printv2*",
-    "/range*"
+    "/range*",
+    "/pdfv1*",
+    "/pdfv2*"
   ],
   "exclude": []
 }
