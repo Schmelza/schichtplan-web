@@ -307,7 +307,8 @@ export async function onRequestGet({ request }) {
         const [r,g,b] = rgbHexTo01(fillHex);
         setFillRGB(r,g,b); rect(x,y,w,h); fill();
         setStrokeRGB(0,0,0); rect(x,y,w,h); stroke();
-        text(x+6, y+4, 9.5, label);
+        const lw = label.length * 4.6;
+      text(x + w/2 - lw/2, y + 4, 9.5, label);
       };
       box(legX, legY, 70, 16, HOLIDAY_BG, "Feiertag");
       box(legX+80, legY, 60, 16, VACATION_BG, "Ferien");
