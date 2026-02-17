@@ -170,7 +170,7 @@ export async function onRequestGet({ request }) {
   const ferienSet = await getFerienSetForYear(year);
 
   const tel = (fiber === 1 ? TEL.fiber1 : TEL.fiber2);
-  const title = `Schichtplan ${year} – Fiber ${fiber} - P${team}`;
+  const title = `Schichtplan ${year}  Fiber ${fiber} - P${team}`;
   const printedBy = "Printed by: Johannes Trippen©";
   const telLines = [tel.b, tel.m, tel.t];
 
@@ -199,9 +199,15 @@ export async function onRequestGet({ request }) {
       setLineWidth(1);
       rect(boxX, boxY, boxW, boxH);
       stroke();
-      text(boxX + 10, boxY + 28, 9.5, telLines[0]);
-      text(boxX + 10, boxY + 16, 9.5, telLines[1]);
-      text(boxX + 10, boxY + 4,  9.5, telLines[2]);
+      
+function centerPhone(line, yOffset){
+  const tw = line.length * 4.6;
+  text(boxX + boxW/2 - tw/2, boxY + yOffset, 9.5, line);
+}
+centerPhone(telLines[0], 28);
+centerPhone(telLines[1], 16);
+centerPhone(telLines[2], 4);
+
 
       // Table layout for V2: 12 months across, each month 3 columns.
       const headerRowH = 16;
