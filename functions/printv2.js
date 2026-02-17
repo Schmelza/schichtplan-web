@@ -208,11 +208,17 @@ const printTitle = title;
     }
   }
   window.onafterprint = exitPrint;
-  window.addEventListener("focus", () => {
-    setTimeout(exitPrint, 150);
-  }, { once: true });
+const ua = navigator.userAgent || "";
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (ua.includes("Mac") && "ontouchend" in document);
 
-</script>
+  // iOS (especially standalone/PWA) sometimes doesn't fire onafterprint reliably.
+  // Only enable the focus fallback on iOS to avoid Firefox/desktop immediately navigating back.
+  if (isIOS) {
+    window.addEventListener("focus", () => {
+      setTimeout(exitPrint, 150);
+    }, { once: true });
+  }
+  </script>
 </body>
 </html>`;
 
