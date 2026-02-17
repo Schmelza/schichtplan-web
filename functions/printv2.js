@@ -141,34 +141,10 @@ const printTitle = title;
     .legend span{padding:3px 8px; margin:0 4px}
   }
 
-  /* Print toolbar (hidden on paper) */
-  .topbar{
-    position:fixed;
-    top:10px; left:10px;
-    z-index:99999;
-    display:flex;
-    gap:10px;
-    pointer-events:auto;
-  }
-  .topbar button{
-    padding:10px 12px;
-    border:1px solid #000;
-    background:#fff;
-    color:#000;
-    border-radius:10px;
-    font-size:14px;
-    pointer-events:auto;
-  }
-  .topbar button:active{ transform: translateY(1px); }
   @media print{ .topbar{ display:none !important; } }
-
 </style>
 </head>
 <body class="readonly">
-<div class="topbar" role="toolbar" aria-label="Druck-Tools">
-  <button type="button" onclick="(function(){ try{ if(history.length>1){ history.back(); } else { location.href='/'; } }catch(e){ location.href='/'; } })()">← Zurück</button>
-  <button id="printBtn" type="button" onclick="(function(){ try{ window.print(); }catch(e){} })()">🖨️ Drucken</button>
-</div>
 <div class="page">
   <div class="top">
     <div>
@@ -195,30 +171,9 @@ const printTitle = title;
 </div>
 
 <script>
+  // Auto-open print dialog
   try{ document.title = ${JSON.stringify(printTitle)}; }catch(e){}
-
-  // iOS sometimes shows an "allow automatic printing" prompt when printing repeatedly.
-  // Workaround: after the first print, the print button reloads the page for a fresh print context.
-  let printedOnce = false;
-  const btn = document.getElementById("printBtn");
-  if (btn) {
-    btn.addEventListener("click", (e) => {
-      // Prevent the inline onclick from firing as well
-      e.stopPropagation();
-      e.preventDefault();
-
-      if (printedOnce) {
-        location.reload();
-        return;
-      }
-      try{ window.print(); }catch(err){}
-    }, true);
-
-    window.onafterprint = () => {
-      printedOnce = true;
-      btn.textContent = "🔄 Neu laden (erneut drucken)";
-    };
-  }
+  setTimeout(() => { try{ window.print(); }catch(e){} }, 250);
 </script>
 </body>
 </html>`;
