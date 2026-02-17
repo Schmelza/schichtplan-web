@@ -309,13 +309,11 @@
       const webcalUrl = data.webcal_url || (location.origin.replace('https://','webcal://') + icsUrl);
 
       const mkA = (href, text) => {
-        const a = document.createElement('a');
-        a.href = href;
-        a.target = '_blank';
-        a.rel = 'noopener';
-        a.textContent = text;
-        return a;
-      };
+  const a = document.createElement('a');
+  a.href = href;
+  a.textContent = text;
+  return a;
+};
 
       linksEl.appendChild(mkA(icsUrl, 'ICS (iOS/Android)'));
       linksEl.appendChild(mkA(rawUrl, 'RAW (ios/Android)'));
