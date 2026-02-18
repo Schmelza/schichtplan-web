@@ -6,7 +6,8 @@
   <title>Schichtkalender (ICS) – Web Generator</title>
   <link rel="icon" href="/favicon.ico">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<meta name="theme-color" content="#2563eb">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#2563eb">
   <style>
     :root{
       --bg:#ffffff;
@@ -52,29 +53,6 @@
     .qrbox img{width:100%;max-width:220px;height:auto;display:block;margin:0 auto 10px;}
     .small{font-size:12px;color:var(--muted);word-break:break-all;}
   </style>
-
-  <script>
-    
-  function isStandalone(){
-    return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
-           (window.navigator && window.navigator.standalone === true);
-  }
-  function isIOS(){
-    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-  }
-
-(function(){
-      var ua = navigator.userAgent || "";
-      var isIOS = /iPad|iPhone|iPod/i.test(ua);
-      if (!isIOS) {
-        var link = document.createElement('link');
-        link.rel = 'manifest';
-        link.href = '/manifest.webmanifest';
-        document.head.appendChild(link);
-      }
-    })();
-  </script>
-
 </head>
 
 <body>
@@ -294,12 +272,26 @@
   function openPrint(which){
     if(!isValidSelection()) return;
     const {fiber, team, year} = getParams();
-    const url = `/${which}?fiber=${encodeURIComponent(fiber)}&team=${encodeURIComponent(team)}&year=${encodeURIComponent(year)}`;
+
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isStandalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+                         (window.navigator && window.navigator.standalone === true);
+
+    let url = `/${which}?fiber=${encodeURIComponent(fiber)}&team=${encodeURIComponent(team)}&year=${encodeURIComponent(year)}`;
+
+    // iOS Homescreen/Web-App: force real download so user can print from Dateien/Share.
+    if (isIOS && isStandalone){
+      url += '&dl=1';
+      location.href = url;
+      return;
+    }
+
+    // Everywhere else (incl. Windows/Android PWA): open in a new window/tab so the app stays open.
     window.open(url, '_blank', 'noopener');
   }
 
-  btnPrintV1.addEventListener('click', () => openPrint('printv1'));
-  btnPrintV2.addEventListener('click', () => openPrint('printv2'));
+  btnPrintV1.addEventListener('click', () => openPrint('pdfv1'));
+  btnPrintV2.addEventListener('click', () => openPrint('pdfv2'));
 
   btnGenerate.addEventListener('click', async () => {
     setError('');
@@ -369,7 +361,7 @@
 
 <script>
   // PWA Service Worker
-  if (!isIOS() && ("serviceWorker" in navigator)) {
+  if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     });
