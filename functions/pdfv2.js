@@ -162,7 +162,9 @@ export async function onRequestGet({ request }) {
   const team  = parseIntParam(url, "team");
   const year  = parseIntParam(url, "year");
 
-  if (!fiber || !team || !year) return new Response("Missing params: fiber, team, year", { status: 400 });
+  
+  const dl = url.searchParams.get("dl");
+if (!fiber || !team || !year) return new Response("Missing params: fiber, team, year", { status: 400 });
 
   const yr = clampAllowedYear(year);
   if (!yr.ok) return new Response(`year muss ${yr.minYear} bis ${yr.maxYear} sein`, { status: 400 });
@@ -326,12 +328,12 @@ restore();
       box(legX + 70 + gap + 60 + gap + 55 + gap + 55 + gap, legY, 70, 16, SHIFT_COLORS["N"], "N = Nacht");
     }
   });
-
-  const filename = `schichtplan-${year}-fiber${fiber}-p${team}-v2.pdf`;
+const filename = `Schichtplan-Fiber${fiber}-P${team}-${year}-v2.pdf`;
+  const disposition = (dl === "1") ? "attachment" : "inline";
   return new Response(pdfBytes, {
     headers: {
       "content-type": "application/pdf",
-      "content-disposition": `inline; filename="${filename}"`,
+      "content-disposition": `${disposition}; filename="${filename}"`,
       "cache-control": "no-store"
     }
   });
