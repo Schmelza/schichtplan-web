@@ -360,8 +360,8 @@
   }
   function openPdf(endpoint){
     const url = `${endpoint}${buildPrintQuery()}`;
-    // iOS PWA: open PDFs in a new tab so Safari/Files viewer provides Print/Share UI and a way back.
-    if (isIOS() && isStandalone()){
+    // PWA (iOS/Windows/Android): open PDFs in a new window/tab so you can close it and return to the app.
+    if (isStandalone()){
       try{ window.open(url, '_blank', 'noopener'); return; }catch(e){}
     }
     location.href = url;
