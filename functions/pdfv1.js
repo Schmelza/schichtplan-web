@@ -29,10 +29,10 @@ function pdfEscape(str){
   for (let i = 0; i < s.length; i++) {
     const code = s.charCodeAt(i);
 
-    // Escape special PDF string chars
-    if (code === 0x5C) { out += "\\"; continue; } // backslash
-    if (code === 0x28) { out += "\("; continue; }  // (
-    if (code === 0x29) { out += "\)"; continue; }  // )
+    // Escape special PDF string chars (correct JS escaping)
+    if (code === 0x5C) { out += "\\\\"; continue; } // backslash
+    if (code === 0x28) { out += "\\(";  continue; }  // (
+    if (code === 0x29) { out += "\\)";  continue; }  // )
 
     // ASCII is safe as-is
     if (code >= 0x20 && code <= 0x7E) { out += s[i]; continue; }
