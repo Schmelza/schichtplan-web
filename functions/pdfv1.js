@@ -346,11 +346,15 @@ centerInBox(telLines[2], 4);
     }
   });
 const filename = `Schichtplan-Fiber${fiber}-P${team}-${year}-v1.pdf`;
-  const disposition = (dl === "1") ? "attachment" : "inline";
+  const isDownload = (dl === "1");
+  const disposition = isDownload ? "attachment" : "inline";
+  // iOS is stubborn with PDFs; for dl=1 we also use octet-stream to encourage "Download/Files"
+  const ctype = isDownload ? "application/octet-stream" : "application/pdf";
   return new Response(pdfBytes, {
     headers: {
-      "content-type": "application/pdf",
+      "content-type": ctype,
       "content-disposition": `${disposition}; filename="${filename}"`,
+      "x-content-type-options": "nosniff",
       "cache-control": "no-store"
     }
   });
