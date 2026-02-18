@@ -117,7 +117,7 @@
 </div>
 
 <div class="hint" style="text-align:center;margin-top:14px;">
-  Tipp: iOS kann alle 3 Download´s importieren und QR-Codes Scannen. Android in der Regel den ICS direkt Download!
+  Hinweis: iOS kann alle 3 Download´s importieren und QR-Codes Scannen. Android in der Regel den ICS direkt Download. Die Website kann App installiert werden!
 </div>
 
 <!-- COUNTER (unauffällig) -->
@@ -273,11 +273,11 @@
     if(!isValidSelection()) return;
     const {fiber, team, year} = getParams();
     const url = `/${which}?fiber=${encodeURIComponent(fiber)}&team=${encodeURIComponent(team)}&year=${encodeURIComponent(year)}`;
-    window.open(url, '_blank', 'noopener');
+    window.location.href = url;
   }
 
-  btnPrintV1.addEventListener('click', () => openPrint('printv1'));
-  btnPrintV2.addEventListener('click', () => openPrint('printv2'));
+  btnPrintV1.addEventListener('click', () => openPrint('pdfv1'));
+  btnPrintV2.addEventListener('click', () => openPrint('pdfv2'));
 
   btnGenerate.addEventListener('click', async () => {
     setError('');
@@ -309,13 +309,11 @@
       const webcalUrl = data.webcal_url || (location.origin.replace('https://','webcal://') + icsUrl);
 
       const mkA = (href, text) => {
-        const a = document.createElement('a');
-        a.href = href;
-        a.target = '_blank';
-        a.rel = 'noopener';
-        a.textContent = text;
-        return a;
-      };
+  const a = document.createElement('a');
+  a.href = href;
+  a.textContent = text;
+  return a;
+};
 
       linksEl.appendChild(mkA(icsUrl, 'ICS (iOS/Android)'));
       linksEl.appendChild(mkA(rawUrl, 'RAW (ios/Android)'));
@@ -352,28 +350,6 @@
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     });
   }
-</script>
-
-
-<script>
-(function(){
-  function isStandalone(){
-    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-  }
-
-  document.addEventListener('click', function(e){
-    const a = e.target.closest('a');
-    if(!a) return;
-
-    const href = a.getAttribute('href') || '';
-    if(href.includes('/pdfv1') || href.includes('/pdfv2')){
-      if(isStandalone()){
-        e.preventDefault();
-        window.open(href, '_blank');
-      }
-    }
-  }, true);
-})();
 </script>
 
 </body>
