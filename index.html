@@ -6,18 +6,23 @@
   <title>Schichtkalender (ICS) – Web Generator</title>
   <link rel="icon" href="/favicon.ico">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
   <script>
-    // iOS-PWA deaktivieren (Option A): Manifest & Service-Worker nur für Android/Windows
-    (function(){
-      const ua = navigator.userAgent || "";
-      const isIOS = /iP(hone|od|ad)/.test(ua);
-      window.__IS_IOS__ = isIOS;
-      if (!isIOS) {
-        document.write('<link rel="manifest" href="/manifest.webmanifest">');
-      }
+    // iOS PWA: disable manifest so "Als Web‑App öffnen" is not offered.
+    (function () {
+      try {
+        var ua = navigator.userAgent || "";
+        window.__IS_IOS__ = /iPad|iPhone|iPod/.test(ua) || (ua.indexOf("Mac") !== -1 && ("ontouchend" in document));
+        if (!window.__IS_IOS__) {
+          var link = document.createElement("link");
+          link.rel = "manifest";
+          link.href = "/manifest.webmanifest";
+          document.head.appendChild(link);
+        }
+      } catch (e) { window.__IS_IOS__ = false; }
     })();
   </script>
-  <meta name="theme-color" content="#2563eb">
+<meta name="theme-color" content="#2563eb">
   <style>
     :root{
       --bg:#ffffff;
@@ -286,8 +291,8 @@
     window.open(url, '_blank', 'noopener');
   }
 
-  btnPrintV1.addEventListener('click', () => openPrint('printv1'));
-  btnPrintV2.addEventListener('click', () => openPrint('printv2'));
+  btnPrintV1.addEventListener('click', () => openPrint('pdfv1'));
+  btnPrintV2.addEventListener('click', () => openPrint('pdfv2'));
 
   btnGenerate.addEventListener('click', async () => {
     setError('');
@@ -357,17 +362,22 @@
 
 <script>
   // PWA Service Worker
-  // iOS: falls vorher schon ein Service Worker registriert war, sauber entfernen
-  if ("serviceWorker" in navigator && window.__IS_IOS__) {
-    navigator.serviceWorker.getRegistrations()
-      .then(regs => regs.forEach(r => r.unregister()))
-      .catch(() => {});
-  }
-
-  if ("serviceWorker" in navigator && !window.__IS_IOS__) {
+  if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     });
+  }
+</script>
+
+
+<script>
+  function openPdf(url){
+    try{
+      // Always open in a new window/tab so the app stays open.
+      window.open(url, "_blank", "noopener");
+    }catch(e){
+      location.href = url;
+    }
   }
 </script>
 
