@@ -6,7 +6,17 @@
   <title>Schichtkalender (ICS) – Web Generator</title>
   <link rel="icon" href="/favicon.ico">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <link rel="manifest" href="/manifest.webmanifest">
+  <script>
+    // iOS-PWA deaktivieren (Option A): Manifest & Service-Worker nur für Android/Windows
+    (function(){
+      const ua = navigator.userAgent || "";
+      const isIOS = /iP(hone|od|ad)/.test(ua);
+      window.__IS_IOS__ = isIOS;
+      if (!isIOS) {
+        document.write('<link rel="manifest" href="/manifest.webmanifest">');
+      }
+    })();
+  </script>
   <meta name="theme-color" content="#2563eb">
   <style>
     :root{
@@ -117,7 +127,7 @@
 </div>
 
 <div class="hint" style="text-align:center;margin-top:14px;">
-  Hinweis: iOS kann alle 3 Download´s importieren und QR-Codes Scannen. Android in der Regel den ICS direkt Download. Die Website kann App installiert werden!
+  Tipp: iOS kann alle 3 Download´s importieren und QR-Codes Scannen. Android in der Regel den ICS direkt Download!
 </div>
 
 <!-- COUNTER (unauffällig) -->
@@ -273,11 +283,11 @@
     if(!isValidSelection()) return;
     const {fiber, team, year} = getParams();
     const url = `/${which}?fiber=${encodeURIComponent(fiber)}&team=${encodeURIComponent(team)}&year=${encodeURIComponent(year)}`;
-    window.location.href = url;
+    window.open(url, '_blank', 'noopener');
   }
 
-  btnPrintV1.addEventListener('click', () => openPdf('/pdfv1'));
-  btnPrintV2.addEventListener('click', () => openPdf('/pdfv2'));
+  btnPrintV1.addEventListener('click', () => openPrint('printv1'));
+  btnPrintV2.addEventListener('click', () => openPrint('printv2'));
 
   btnGenerate.addEventListener('click', async () => {
     setError('');
@@ -309,11 +319,13 @@
       const webcalUrl = data.webcal_url || (location.origin.replace('https://','webcal://') + icsUrl);
 
       const mkA = (href, text) => {
-  const a = document.createElement('a');
-  a.href = href;
-  a.textContent = text;
-  return a;
-};
+        const a = document.createElement('a');
+        a.href = href;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        a.textContent = text;
+        return a;
+      };
 
       linksEl.appendChild(mkA(icsUrl, 'ICS (iOS/Android)'));
       linksEl.appendChild(mkA(rawUrl, 'RAW (ios/Android)'));
@@ -340,65 +352,19 @@
   });
 
 })();
-
-  function isIOS(){
-    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-  }
-  function isStandalone(){
-    return (window.navigator.standalone === true) || window.matchMedia('(display-mode: standalone)').matches;
-  }
-  function buildPrintQuery(){
-    const fiber = document.getElementById('fiber')?.value || document.getElementById('department')?.value || '';
-    const team  = document.getElementById('team')?.value || '';
-    const year  = document.getElementById('year')?.value || '';
-    const qs = new URLSearchParams();
-    if (fiber) qs.set('fiber', fiber);
-    if (team)  qs.set('team', team);
-    if (year)  qs.set('year', year);
-    const s = qs.toString();
-    return s ? ('?' + s) : '';
-  }
-  function openPdf(endpoint){
-    const url = `${endpoint}${buildPrintQuery()}`;
-
-    // iOS PWA: cannot reliably open a new tab/window to a PDF. Use Share Sheet instead.
-    if (isIOS && typeof isIOS === 'function' ? (isIOS() && isStandalone()) : (isStandalone())) {
-      try{
-        if (navigator.share) {
-          navigator.share({ title: 'Schichtplan PDF', url });
-          return;
-        }
-      }catch(e){}
-      // Fallback: show a simple prompt so user can copy the link and open in Safari
-      try{
-        window.prompt('Link kopieren und in Safari öffnen:', url);
-        return;
-      }catch(e){}
-    }
-
-    // Other environments: open PDFs in a new window when in PWA, otherwise same tab.
-    if (isStandalone()){
-      try{
-        const a = document.createElement('a');
-        a.href = url;
-        a.target = '_blank';
-        a.rel = 'noopener';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        return;
-      }catch(e){}
-    }
-
-    location.href = url;
-  }
-
 </script>
 
 
 <script>
   // PWA Service Worker
-  if ("serviceWorker" in navigator) {
+  // iOS: falls vorher schon ein Service Worker registriert war, sauber entfernen
+  if ("serviceWorker" in navigator && window.__IS_IOS__) {
+    navigator.serviceWorker.getRegistrations()
+      .then(regs => regs.forEach(r => r.unregister()))
+      .catch(() => {});
+  }
+
+  if ("serviceWorker" in navigator && !window.__IS_IOS__) {
     window.addEventListener("load", () => {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     });
