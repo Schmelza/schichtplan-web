@@ -362,7 +362,17 @@
     const url = `${endpoint}${buildPrintQuery()}`;
     // PWA (iOS/Windows/Android): open PDFs in a new window/tab so you can close it and return to the app.
     if (isStandalone()){
-      try{ window.open(url, '_blank', 'noopener'); return; }catch(e){}
+      try{
+        // iOS PWA is picky with window.open; anchor-click is more reliable.
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        return;
+      }catch(e){}
     }
     location.href = url;
   }
