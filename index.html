@@ -360,10 +360,25 @@
   }
   function openPdf(endpoint){
     const url = `${endpoint}${buildPrintQuery()}`;
-    // PWA (iOS/Windows/Android): open PDFs in a new window/tab so you can close it and return to the app.
+
+    // iOS PWA: cannot reliably open a new tab/window to a PDF. Use Share Sheet instead.
+    if (isIOS && typeof isIOS === 'function' ? (isIOS() && isStandalone()) : (isStandalone())) {
+      try{
+        if (navigator.share) {
+          navigator.share({ title: 'Schichtplan PDF', url });
+          return;
+        }
+      }catch(e){}
+      // Fallback: show a simple prompt so user can copy the link and open in Safari
+      try{
+        window.prompt('Link kopieren und in Safari öffnen:', url);
+        return;
+      }catch(e){}
+    }
+
+    // Other environments: open PDFs in a new window when in PWA, otherwise same tab.
     if (isStandalone()){
       try{
-        // iOS PWA is picky with window.open; anchor-click is more reliable.
         const a = document.createElement('a');
         a.href = url;
         a.target = '_blank';
@@ -374,6 +389,7 @@
         return;
       }catch(e){}
     }
+
     location.href = url;
   }
 
