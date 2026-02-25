@@ -8,7 +8,7 @@
     "/printv2*",
     "/range*",
     "/pdfv1*",
-    "/pdfv2*"
+    "/pdfv2*",
     "/stats*"
   ],
   "exclude": []
