@@ -181,7 +181,10 @@ if (!fiber || !team || !year) return new Response("Missing params: fiber, team, 
     printedBy,
     telLines,
     drawContent: ({ w, h, setStrokeRGB, setFillRGB, setLineWidth, rect, fillStroke, fill, stroke, text, clipRect, restore, rgbHexTo01 }) => {
-      const margin = 24;
+            // Text width helper for Courier (monospace): each glyph ~0.6em
+      const tw = (s, size) => String(s ?? "").length * size * 0.6;
+
+const margin = 24;
       const headerH = 62;
       const legendH = 26;
       const tableTopY = h - margin - headerH;
@@ -197,7 +200,7 @@ if (!fiber || !team || !year) return new Response("Missing params: fiber, team, 
       // - Title centered
       // - "Printed by" left-aligned above the months (like the reference printout)
       setFillRGB(0,0,0); setStrokeRGB(0,0,0);
-      text(w/2 - (title.length*4.2), h - margin - 24, 18, title);
+      text(w/2 - (tw(title, 18)/2), h - margin - 24, 18, title);
       text(startX + 6,            h - margin - 42, 11, printedBy);
 
       // Tel box right
@@ -209,9 +212,9 @@ if (!fiber || !team || !year) return new Response("Missing params: fiber, team, 
       stroke();
       
 function centerInBox(line, yOffset){
-  const tw = line.length * 4.6;
+  const tW = tw(line, 9.5);
   text(
-    boxX + boxW/2 - tw/2,
+    boxX + boxW/2 - tW/2,
     boxY + yOffset,
     9.5,
     line
@@ -257,7 +260,7 @@ centerInBox(telLines[2], 4);
 
         // Month name centered-ish
         clipRect(startX, monthYBottom, monthColW, monthSpanH);
-        const monthTextWidth = monthName.length * 4.6;
+        const monthTextWidth = tw(monthName, 10.5);
       text(
         startX + monthColW/2 - monthTextWidth/2,
         monthYBottom + monthSpanH/2 - 4,
@@ -300,10 +303,10 @@ centerInBox(telLines[2], 4);
                 stroke();
               }
               const s = String(d);
-              text(cellX + dayColW/2 - (s.length*2.8), cellY + rowH/2 - 3.5, 9.5, s);
+              text(cellX + dayColW/2 - (tw(s, 9.5)/2), cellY + rowH/2 - 3.5, 9.5, s);
             } else if (r === 0) {
               // weekday row
-              text(cellX + dayColW/2 - 4.5, cellY + rowH/2 - 3.5, 9.0, wd);
+              text(cellX + dayColW/2 - (tw(wd, 9.0)/2), cellY + rowH/2 - 3.5, 9.0, wd);
             } else {
               // shift row with colored bg and letter
               const shift = shiftForDate(fiber, team, dateObj);
@@ -316,7 +319,7 @@ centerInBox(telLines[2], 4);
                 setStrokeRGB(0,0,0);
                 rect(cellX, cellY, dayColW, rowH);
                 stroke();
-                text(cellX + dayColW/2 - 3.5, cellY + rowH/2 - 3.5, 10, letter);
+                text(cellX + dayColW/2 - (tw(letter, 10)/2), cellY + rowH/2 - 3.5, 10, letter);
               }
             }
           }
@@ -335,8 +338,8 @@ centerInBox(telLines[2], 4);
         const [r,g,b] = rgbHexTo01(fillHex);
         setFillRGB(r,g,b); rect(x,y,w,h); fill();
         setStrokeRGB(0,0,0); rect(x,y,w,h); stroke();
-        const tw = label.length * 4.6;
-      text(x + w/2 - tw/2, y + 4, 9.5, label);
+        const tW = tw(label, 9.5);
+      text(x + w/2 - tW/2, y + 4, 9.5, label);
       };
       box(legX, legY, 70, 16, HOLIDAY_BG, "Feiertag");
       box(legX+80, legY, 60, 16, VACATION_BG, "Ferien");
