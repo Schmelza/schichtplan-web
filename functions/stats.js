@@ -84,7 +84,7 @@ export async function onRequestGet({ request, env }) {
     </tbody>
   </table>
 
-  <div class="small">Hinweis: zählt nur den „Generieren“-Klick (QR/ICS), nicht PDF-Downloads.</div>
+  <div class="small">Hinweis: zählt nur den Generieren Button</div>
 </body>
 </html>`;
 
