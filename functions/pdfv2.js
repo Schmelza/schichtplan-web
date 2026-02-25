@@ -30,10 +30,10 @@ function pdfEscape(str){
   for (let i = 0; i < s.length; i++) {
     const code = s.charCodeAt(i);
 
-    // Escape special PDF string chars (correct JS escaping)
-    if (code === 0x5C) { out += "\\\\"; continue; } // backslash
-    if (code === 0x28) { out += "\\(";  continue; }  // (
-    if (code === 0x29) { out += "\\)";  continue; }  // )
+    // Escape special PDF string chars
+    if (code === 0x5C) { out += "\\"; continue; } // backslash
+    if (code === 0x28) { out += "\("; continue; }  // (
+    if (code === 0x29) { out += "\)"; continue; }  // )
 
     // ASCII is safe as-is
     if (code >= 0x20 && code <= 0x7E) { out += s[i]; continue; }
@@ -75,7 +75,7 @@ function buildPdf({ title, printedBy, telLines, drawContent }){
   }
 
   // Font object (Helvetica)
-  const fontObj = addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>");
+  const fontObj = addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
 
   // Content stream placeholder; fill later
   let content = "";
@@ -162,9 +162,7 @@ export async function onRequestGet({ request }) {
   const team  = parseIntParam(url, "team");
   const year  = parseIntParam(url, "year");
 
-  
-  const dl = url.searchParams.get("dl");
-if (!fiber || !team || !year) return new Response("Missing params: fiber, team, year", { status: 400 });
+  if (!fiber || !team || !year) return new Response("Missing params: fiber, team, year", { status: 400 });
 
   const yr = clampAllowedYear(year);
   if (!yr.ok) return new Response(`year muss ${yr.minYear} bis ${yr.maxYear} sein`, { status: 400 });
@@ -181,6 +179,10 @@ if (!fiber || !team || !year) return new Response("Missing params: fiber, team, 
     printedBy,
     telLines,
     drawContent: ({ w, h, setStrokeRGB, setFillRGB, setLineWidth, rect, fill, stroke, text, clipRect, restore, rgbHexTo01 }) => {
+      // --- Text width helpers (Courier is fixed-width: 600 units => 0.6 * fontSize per char) ---
+      const _tw = (s, size) => String(s ?? "").length * size * 0.6;
+      const _tc = (cx, y, size, s) => text(cx - _tw(s, size) / 2, y, size, s);
+
       const margin = 24;
       const headerH = 62;
       const legendH = 26;
@@ -191,7 +193,7 @@ if (!fiber || !team || !year) return new Response("Missing params: fiber, team, 
 
       // Header
       setFillRGB(0,0,0); setStrokeRGB(0,0,0);
-      text(w/2 - (title.length*4.2), h - margin - 24, 18, title);
+      _tc(w/2, h - margin - 24, 18, title);
       text(margin, h - margin - 42, 11, printedBy);
 // Tel box right
       const boxW = 190, boxH = 44;
@@ -202,7 +204,7 @@ if (!fiber || !team || !year) return new Response("Missing params: fiber, team, 
       stroke();
       
 function centerPhone(line, yOffset){
-  const tw = line.length * 4.6;
+  const tw = _tw(line, 9.5);
   text(boxX + boxW/2 - tw/2, boxY + yOffset, 9.5, line);
 }
 centerPhone(telLines[0], 28);
@@ -328,16 +330,12 @@ restore();
       box(legX + 70 + gap + 60 + gap + 55 + gap + 55 + gap, legY, 70, 16, SHIFT_COLORS["N"], "N = Nacht");
     }
   });
-const filename = `Schichtplan-Fiber${fiber}-P${team}-${year}-v2.pdf`;
-  const isDownload = (dl === "1");
-  const disposition = isDownload ? "attachment" : "inline";
-  // iOS is stubborn with PDFs; for dl=1 we also use octet-stream to encourage "Download/Files"
-  const ctype = isDownload ? "application/octet-stream" : "application/pdf";
+
+  const filename = `schichtplan-${year}-fiber${fiber}-p${team}-v2.pdf`;
   return new Response(pdfBytes, {
     headers: {
-      "content-type": ctype,
-      "content-disposition": `${disposition}; filename="${filename}"`,
-      "x-content-type-options": "nosniff",
+      "content-type": "application/pdf",
+      "content-disposition": `inline; filename="${filename}"`,
       "cache-control": "no-store"
     }
   });
