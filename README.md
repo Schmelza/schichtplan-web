@@ -5,7 +5,7 @@ Dieses Tool (Web-Based) erstellt euch den Schichtplan / Kalender für´s Aktuell
 Erst Abteilung auswählen
 Team (Schicht auswählen)
 Jahr auswählen
-
+ 
 Generieren
 
 Ihr erhaltet 2 QR-Codes zum Scannen (wenn ihr auf Desktop ausführt) 
