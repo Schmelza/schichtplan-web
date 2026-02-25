@@ -66,7 +66,7 @@ export async function onRequestGet({ request, env }) {
 </style>
 </head>
 <body>
-  <h1>Schichtplan – Generierungen</h1>
+  <h1>User Statistik</h1>
   <div class="meta">Gesamt: <b>${esc(total)}</b></div>
 
   <table>
