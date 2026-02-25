@@ -1,6 +1,6 @@
 import { parseIntParam } from "./_common.js";
 
-const ADMIN_KEY = "CHANGE_ME"; // <-- change this to something secret, e.g. "Johannes123!"
+const ADMIN_KEY = "Rammstein1"; // <-- change this to something secret, e.g. "Johannes123!"
 
 function esc(s){
   return String(s ?? "")
