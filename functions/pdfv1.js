@@ -74,7 +74,7 @@ function buildPdf({ title, printedBy, telLines, drawContent }){
   }
 
   // Font object (Helvetica)
-  const fontObj = addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
+  const fontObj = addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>");
 
   // Content stream placeholder; fill later
   let content = "";
