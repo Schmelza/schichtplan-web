@@ -252,8 +252,8 @@
   function updateButtons(){
     const ok = isValidSelection();
     btnGenerate.disabled = !ok;
-    btnPrintV1.disabled  = !ok;
-    btnPrintV2.disabled  = !ok;
+    btnPrintV1.disabled  = !ok || !hasGenerated;
+    btnPrintV2.disabled  = !ok || !hasGenerated;
   }
 
   setTeamOptionsForFiber('');
@@ -347,7 +347,10 @@
       /* ✅ HIER wird gezählt (nur bei Erfolg) */
       incrementGlobalCounter();
 
-    }catch(e){
+    
+    hasGenerated = true;
+    updateButtons();
+}catch(e){
       setError('Fehler: ' + (e && e.message ? e.message : String(e)));
     }finally{
       btnGenerate.textContent = 'Generieren';
