@@ -74,7 +74,7 @@ function buildPdf({ title, printedBy, telLines, drawContent }){
     return objects.length; // 1-based obj number
   }
 
-  // Font object (Helvetica)
+  // Font object (Courier) for identical look across PDF v1/v2 and stable monospace metrics
   const fontObj = addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>");
 
   // Content stream placeholder; fill later
@@ -153,6 +153,12 @@ function buildPdf({ title, printedBy, telLines, drawContent }){
   pdf += `${xrefStart}\n%%EOF`;
 
   return new TextEncoder().encode(pdf);
+}
+
+// Courier (Type1) is monospaced with 600 units width per glyph.
+// In points, approximate text width = len * size * 0.6
+function textWidthCourier(str, size){
+  return String(str ?? "").length * (Number(size) || 0) * 0.6;
 }
 
 
@@ -245,8 +251,11 @@ centerPhone(telLines[2], 4);
         stroke();
 
         clipRect(x, y - headerRowH, monthWidth, headerRowH);
-        const mw = MONTHS_DE[m].length * 4.6;
-        text(x + monthWidth/2 - mw/2, y - headerRowH + 4, 10.5, MONTHS_DE[m]);
+        {
+          const ms = 10.5;
+          const mw = _tw(MONTHS_DE[m], ms);
+          text(x + monthWidth/2 - mw/2, y - headerRowH + 4, ms, MONTHS_DE[m]);
+        }
 restore();
       }
       y -= headerRowH;
@@ -286,8 +295,11 @@ restore();
           }
 
           // day number
-          const dn = String(dayNum);
-          text(dayX + dayW/2 - (dn.length*2.8), rowYBottom + rowH/2 - 3.5, 9.5, dn);
+          {
+            const dn = String(dayNum);
+            const ds = 9.5;
+            text(dayX + dayW/2 - _tw(dn, ds)/2, rowYBottom + rowH/2 - 3.5, ds, dn);
+          }
 
           // weekday cell background = shift color only (like HTML): but in v2 you colored only txt cell when shift exists
           const shift = shiftForDate(fiber, team, d);
@@ -300,8 +312,10 @@ restore();
             rect(txtX, rowYBottom, txtW, rowH); stroke();
           }
           // weekday text
-          const dw = dayName.length * 3.6;
-          text(txtX + txtW/2 - dw/2, rowYBottom + rowH/2 - 3.5, 9.5, dayName);
+          {
+            const ws = 9.5;
+            text(txtX + txtW/2 - _tw(dayName, ws)/2, rowYBottom + rowH/2 - 3.5, ws, dayName);
+          }
 }
         y -= rowH;
       }
@@ -320,8 +334,10 @@ restore();
         const [r,g,b] = rgbHexTo01(fillHex);
         setFillRGB(r,g,b); rect(x,y,w,h); fill();
         setStrokeRGB(0,0,0); rect(x,y,w,h); stroke();
-        const lw = label.length * 4.6;
-      text(x + w/2 - lw/2, y + 4, 9.5, label);
+        {
+          const ls = 9.5;
+          text(x + w/2 - _tw(label, ls)/2, y + 4, ls, label);
+        }
       };
       box(legX, legY, 70, 16, HOLIDAY_BG, "Feiertag");
       box(legX + 70 + gap, legY, 60, 16, VACATION_BG, "Ferien");
