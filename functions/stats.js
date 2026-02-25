@@ -67,7 +67,7 @@ export async function onRequestGet({ request, env }) {
 </head>
 <body>
   <h1>User Statistik</h1>
-  <div class="meta">Gesamt: <b>${esc(total)}</b></div>
+  <div class="meta">Gesamt Zähler: <b>${esc(total)}</b></div>
 
   <table>
     <thead>
@@ -75,7 +75,7 @@ export async function onRequestGet({ request, env }) {
         <th>Fiber</th>
         <th>Team</th>
         <th>Jahr</th>
-        <th>Count</th>
+        <th>Zähler</th>
         <th>Letzte Generierung</th>
       </tr>
     </thead>
