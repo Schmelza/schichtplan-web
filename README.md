@@ -4,7 +4,7 @@ Erst Abteilung auswählen
 Team (Schicht auswählen)
 Jahr auswählen
  
-Generieren
+Generieren 
 
 Ihr erhaltet 2 QR-Codes zum Scannen (wenn ihr auf Desktop ausführt) 
 inklusive 3 Download Varianten die für alle Systeme (iOS / Android / Mircosoft Outlook) funktionieren
