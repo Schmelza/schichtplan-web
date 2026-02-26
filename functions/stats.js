@@ -135,7 +135,7 @@ export async function onRequestGet({ request, env }) {
   th{background:#f2f2f2}
   .sub{margin-top:4px;font-size:11px;color:#666;line-height:1.2}
   .small{font-size:12px;color:#555;margin-top:10px}
-  button{padding:10px 12px;border:1px solid #222;background:#fff;border-radius:8px;font-size:14pxcolor:#111; -webkit-appearance:none; appearance:none; font-weight:600;}
+  button{padding:10px 12px;border:1px solid #222;background:#fff;border-radius:8px;font-size:14px; line-height:1.2; color:#111; -webkit-appearance:none; appearance:none; font-weight:600; cursor:pointer;}
   button:active{transform:translateY(1px)}
 </style>
 </head>
@@ -183,6 +183,22 @@ export async function onRequestGet({ request, env }) {
       ${body || '<tr><td colspan="6">Noch keine Daten.</td></tr>'}
     </tbody>
   </table>
+
+<script>
+(function(){
+  try{
+    var u = new URL(location.href);
+    var changed = false;
+    ["reset","kvreset"].forEach(function(k){
+      if(u.searchParams.has(k)){ u.searchParams.delete(k); changed = true; }
+    });
+    if(changed){
+      history.replaceState(null, "", u.pathname + "?" + u.searchParams.toString());
+    }
+  }catch(e){}
+})();
+</script>
+
 </body>
 </html>`;
 
