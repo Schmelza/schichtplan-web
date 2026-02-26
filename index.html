@@ -242,6 +242,23 @@
     return {fiber, team, year};
   }
 
+
+  async function trackEvent(ev){
+    try{
+      const {fiber, team, year} = getParams();
+      if(!fiber || !team || !year) return;
+
+      const url = `/track?event=${encodeURIComponent(ev)}&fiber=${encodeURIComponent(fiber)}&team=${encodeURIComponent(team)}&year=${encodeURIComponent(year)}`;
+
+      if (navigator.sendBeacon) {
+        const blob = new Blob([], { type: 'application/octet-stream' });
+        navigator.sendBeacon(url, blob);
+        return;
+      }
+      fetch(url, { method: 'POST', keepalive: true }).catch(()=>{});
+    }catch(e){}
+  }
+
   function isValidSelection(){
     const {fiber, team, year} = getParams();
     if(!fiber || !team || !year) return false;
@@ -290,8 +307,8 @@
     window.open(url, '_blank', 'noopener');
   }
 
-  btnPrintV1.addEventListener('click', () => openPrint('pdfv1'));
-  btnPrintV2.addEventListener('click', () => openPrint('pdfv2'));
+  btnPrintV1.addEventListener('click', () => { trackEvent('pdfv1'); openPrint('pdfv1'); });
+  btnPrintV2.addEventListener('click', () => { trackEvent('pdfv2'); openPrint('pdfv2'); });
 
   btnGenerate.addEventListener('click', async () => {
     setError('');
@@ -359,6 +376,20 @@
   });
 
 })();
+
+
+  // TRACK_ICS_CAPTURE: count ICS/RAW/WebCal usage
+  document.addEventListener('click', (ev) => {
+    try{
+      const a = ev.target && ev.target.closest ? ev.target.closest('a') : null;
+      if(!a) return;
+      const href = a.getAttribute('href') || '';
+      if (href.startsWith('/ics') || href.startsWith('webcal:') || href.includes('/ics?')) {
+        trackEvent('ics');
+      }
+    }catch(e){}
+  }, true);
+
 </script>
 
 
@@ -369,6 +400,20 @@
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     });
   }
+
+
+  // TRACK_ICS_CAPTURE: count ICS/RAW/WebCal usage
+  document.addEventListener('click', (ev) => {
+    try{
+      const a = ev.target && ev.target.closest ? ev.target.closest('a') : null;
+      if(!a) return;
+      const href = a.getAttribute('href') || '';
+      if (href.startsWith('/ics') || href.startsWith('webcal:') || href.includes('/ics?')) {
+        trackEvent('ics');
+      }
+    }catch(e){}
+  }, true);
+
 </script>
 
 </body>
