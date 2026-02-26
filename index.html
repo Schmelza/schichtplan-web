@@ -375,20 +375,32 @@
     }
   });
 
-
   // TRACK_ICS_CAPTURE: count ICS/RAW/WebCal usage (counts clicks)
+  // Robust across relative/absolute URLs and iOS Safari quirks.
   document.addEventListener('click', (ev) => {
     try{
       const a = ev.target && ev.target.closest ? ev.target.closest('a') : null;
       if(!a) return;
-      const href = a.getAttribute('href') || '';
-      // count clicks on ICS/RAW and webcal subscription links
-      if (href.startsWith('/ics') || href.includes('/ics?') || href.startsWith('webcal:')) {
-        trackEvent('ics'); // +1 per click
+
+      const hrefProp = a.href || '';
+      const hrefAttr = a.getAttribute ? (a.getAttribute('href') || '') : '';
+      const href = hrefProp || hrefAttr;
+
+      // webcal:// subscription link
+      if ((hrefAttr && hrefAttr.startsWith('webcal:')) || (hrefProp && hrefProp.startsWith('webcal:'))) {
+        trackEvent('ics');
+        return;
       }
+
+      // Normal links (relative or absolute)
+      try{
+        const u = new URL(href, location.href);
+        if (u.pathname === '/ics') {
+          trackEvent('ics'); // +1 per click (ICS / RAW)
+        }
+      }catch(_){}
     }catch(e){}
   }, true);
-
 
 })();
 

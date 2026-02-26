@@ -19,7 +19,8 @@ self.addEventListener("fetch", (event) => {
     url.pathname.startsWith("/ics") ||
     url.pathname.startsWith("/printv1") ||
     url.pathname.startsWith("/printv2") ||
-    url.pathname.startsWith("/range")
+    url.pathname.startsWith("/range") ||
+    url.pathname.startsWith("/track")
   ) {
     return;
   }
