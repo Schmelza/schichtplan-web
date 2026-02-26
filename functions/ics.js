@@ -1,4 +1,4 @@
-import { clampAllowedYear, parseIntParam, shiftForDate, statsInc } from "./_common.js";
+import { clampAllowedYear, parseIntParam, shiftForDate } from "./_common.js";
 
 function pad(n){ return String(n).padStart(2,'0'); }
 function fmtDT(dt){ // UTC local date-time (floating) like VBA: yyyymmddTHHmmss
@@ -64,13 +64,6 @@ export async function onRequestGet({ request, env }) {
   out += "END:VCALENDAR\r\n";
 
   const filename = `Fiber${fiber}_P${team}_${year}.ics`;
-
-  // ---- Stats (D1): ICS download ----
-  try {
-    await statsInc(env?.STATS_DB, { fiber, team, year, kind: "ics" });
-  } catch (e) {
-    console.log("STATS_DB update failed (ics)", e);
-  }
 
   return new Response(out, {
     headers: {

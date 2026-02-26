@@ -17,6 +17,16 @@ export async function onRequestGet({ request, env }) {
     return new Response("Forbidden", { status: 403 });
   }
 
+
+  // Global Counter (KV) – identisch zur Index.html
+  let kvGlobal = 0;
+  try {
+    const v = await env.COUNTER_KV.get("counter:huhtamaki_generator");
+    kvGlobal = v ? parseInt(v, 10) : 0;
+    if (!Number.isFinite(kvGlobal)) kvGlobal = 0;
+  } catch (_) {}
+
+
   let rows = [];
   try {    const res = await env.STATS_DB.prepare(`
       SELECT fiber, team, year, count, last_ts,
@@ -35,10 +45,7 @@ export async function onRequestGet({ request, env }) {
     return new Response("DB error: " + (e?.message || String(e)), { status: 500 });
   }
 
-  const total = rows.reduce((a, r) => a + (Number(r.count) || 0), 0);
-
   const body = rows.map(r => {
-    const last = r.last_ts ? new Date(r.last_ts).toLocaleString("de-DE") : "-";
     const lastIcs  = r.last_ics_ts  ? new Date(r.last_ics_ts).toLocaleString("de-DE") : "-";
     const lastP1   = r.last_pdfv1_ts ? new Date(r.last_pdfv1_ts).toLocaleString("de-DE") : "-";
     const lastP2   = r.last_pdfv2_ts ? new Date(r.last_pdfv2_ts).toLocaleString("de-DE") : "-";
@@ -46,7 +53,6 @@ export async function onRequestGet({ request, env }) {
       <td>${esc(r.fiber)}</td>
       <td>P${esc(r.team)}</td>
       <td>${esc(r.year)}</td>
-      <td><b>${esc(r.count)}</b><div class="sub">${esc(last)}</div></td>
       <td><b>${esc(r.ics_count ?? 0)}</b><div class="sub">${esc(lastIcs)}</div></td>
       <td><b>${esc(r.pdfv1_count ?? 0)}</b><div class="sub">${esc(lastP1)}</div></td>
       <td><b>${esc(r.pdfv2_count ?? 0)}</b><div class="sub">${esc(lastP2)}</div></td>
@@ -72,7 +78,7 @@ export async function onRequestGet({ request, env }) {
 </head>
 <body>
   <h1>User Statistik</h1>
-  <div class="meta">Gesamt Zähler: <b>${esc(total)}</b></div>
+  <div class="meta">Gesamt Zähler (KV): <b>${esc(kvGlobal)}</b></div>
 
   <table>
     <thead>
@@ -80,18 +86,15 @@ export async function onRequestGet({ request, env }) {
         <th>Fiber</th>
         <th>Team</th>
         <th>Jahr</th>
-        <th>Generieren</th>
         <th>ICS</th>
         <th>PDF v1</th>
         <th>PDF v2</th>
       </tr>
     </thead>
     <tbody>
-      ${body || '<tr><td colspan="7">Noch keine Daten.</td></tr>'}
+      ${body || '<tr><td colspan="6">Noch keine Daten.</td></tr>'}
     </tbody>
   </table>
-
-  <div class="small">Hinweis: „Generieren“ zählt nur den Generieren-Button (QR/ICS). ICS/PDF zählen die jeweiligen Downloads/Öffnungen.</div>
 </body>
 </html>`;
 
