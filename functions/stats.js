@@ -9,9 +9,79 @@ function esc(s){
     .replaceAll("'","&#39;");
 }
 
+
+export async function onRequestPost({ request, env }) {
+  const url = new URL(request.url);
+  const key = url.searchParams.get("key") || "";
+
+  const resetMsg = url.searchParams.get("reset") === "1"; 
+  if (key !== ADMIN_KEY) return new Response("Forbidden", { status: 403 });
+
+  let action = "";
+  const ct = request.headers.get("content-type") || "";
+  try {
+    if (ct.includes("application/json")) {
+      const data = await request.json();
+      action = String(data?.action || "");
+    } else {
+      const form = await request.formData();
+      action = String(form.get("action") || "");
+    }
+  } catch (_) {}
+
+  if (action !== "reset_all" && action !== "reset_kv" && action !== "reset_all_and_kv") {
+    return new Response("Bad Request", { status: 400 });
+  }
+
+  // 1) Reset D1 counters (ICS/PDF)
+  if (action === "reset_all" || action === "reset_all_and_kv") {
+    try {
+      await env.STATS_DB.prepare(`
+        UPDATE stats
+        SET
+          count = 0,
+          last_ts = NULL,
+          ics_count = 0,
+          last_ics_ts = NULL,
+          pdfv1_count = 0,
+          last_pdfv1_ts = NULL,
+          pdfv2_count = 0,
+          last_pdfv2_ts = NULL
+      `).run();
+    } catch (e) {
+      return new Response("DB error: " + (e?.message || String(e)), { status: 500 });
+    }
+  }
+
+  // 2) Reset KV global counter
+  if (action === "reset_kv" || action === "reset_all_and_kv") {
+    try {
+      await env.COUNTER_KV.put("counter:huhtamaki_generator", "0");
+    } catch (e) {
+      return new Response("KV error: " + (e?.message || String(e)), { status: 500 });
+    }
+  }
+
+  const qs = new URLSearchParams({ key });
+  if (action === "reset_all" || action === "reset_all_and_kv") qs.set("reset", "1");
+  if (action === "reset_kv" || action === "reset_all_and_kv") qs.set("kvreset", "1");
+
+  // Redirect back to stats page (PRG pattern)
+  return new Response(null, {
+    status: 303,
+    headers: { location: `/stats?${qs.toString()}` }
+  });
+
+
+
+}
+
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
   const key = url.searchParams.get("key") || "";
+
+  const resetMsg = url.searchParams.get("reset") === "1";
+  const kvResetMsg = url.searchParams.get("kvreset") === "1";
 
   if (key !== ADMIN_KEY) {
     return new Response("Forbidden", { status: 403 });
@@ -74,11 +144,38 @@ export async function onRequestGet({ request, env }) {
   th{background:#f2f2f2}
   .sub{margin-top:4px;font-size:11px;color:#666;line-height:1.2}
   .small{font-size:12px;color:#555;margin-top:10px}
+  button{padding:10px 12px;border:1px solid #222;background:#fff;border-radius:8px;font-size:14px}
+  button:active{transform:translateY(1px)}
 </style>
 </head>
 <body>
   <h1>User Statistik</h1>
   <div class="meta">Gesamt Zähler (KV): <b>${esc(kvGlobal)}</b></div>
+  ${resetMsg ? '<div class="meta" style="color:#0a6;">ICS/PDF Statistik wurde zurückgesetzt.</div>' : ''}
+  ${kvResetMsg ? '<div class="meta" style="color:#0a6;">Global Counter (KV) wurde auf 0 gesetzt.</div>' : ''}
+
+  <div style="display:flex; gap:10px; flex-wrap:wrap; margin:0 0 14px;">
+    <form method="post" action="/stats?key=${esc(key)}" style="margin:0;">
+      <input type="hidden" name="action" value="reset_all"/>
+      <button type="submit" onclick="return confirm('Wirklich ALLE Counter (ICS/PDF) auf 0 setzen?');">
+        ICS/PDF Statistik zurücksetzen
+      </button>
+    </form>
+
+    <form method="post" action="/stats?key=${esc(key)}" style="margin:0;">
+      <input type="hidden" name="action" value="reset_kv"/>
+      <button type="submit" onclick="return confirm('Wirklich den Global Counter (KV) auf 0 setzen?');">
+        Global Counter (KV) zurücksetzen
+      </button>
+    </form>
+
+    <form method="post" action="/stats?key=${esc(key)}" style="margin:0;">
+      <input type="hidden" name="action" value="reset_all_and_kv"/>
+      <button type="submit" onclick="return confirm('Wirklich ALLES zurücksetzen (ICS/PDF + Global KV)?');">
+        Alles zurücksetzen
+      </button>
+    </form>
+  </div>
 
   <table>
     <thead>
