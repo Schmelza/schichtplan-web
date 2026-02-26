@@ -37,16 +37,7 @@ export async function onRequestPost({ request, env }) {
   if (action === "reset_all" || action === "reset_all_and_kv") {
     try {
       await env.STATS_DB.prepare(`
-        UPDATE stats
-        SET
-          count = 0,
-          last_ts = NULL,
-          ics_count = 0,
-          last_ics_ts = NULL,
-          pdfv1_count = 0,
-          last_pdfv1_ts = NULL,
-          pdfv2_count = 0,
-          last_pdfv2_ts = NULL
+        DELETE FROM stats
       `).run();
     } catch (e) {
       return new Response("DB error: " + (e?.message || String(e)), { status: 500 });
@@ -144,7 +135,7 @@ export async function onRequestGet({ request, env }) {
   th{background:#f2f2f2}
   .sub{margin-top:4px;font-size:11px;color:#666;line-height:1.2}
   .small{font-size:12px;color:#555;margin-top:10px}
-  button{padding:10px 12px;border:1px solid #222;background:#fff;border-radius:8px;font-size:14px}
+  button{padding:10px 12px;border:1px solid #222;background:#fff;border-radius:8px;font-size:14pxcolor:#111; -webkit-appearance:none; appearance:none; font-weight:600;}
   button:active{transform:translateY(1px)}
 </style>
 </head>
