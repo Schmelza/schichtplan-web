@@ -141,9 +141,9 @@ export async function onRequestGet({ request, env }) {
 </head>
 <body>
   <h1>User Statistik</h1>
-  <div class="meta">Gesamt Zähler (KV): <b>${esc(kvGlobal)}</b></div>
+  <div class="meta">Gesamt Zähler: <b>${esc(kvGlobal)}</b></div>
   ${resetMsg ? '<div class="meta" style="color:#0a6;">ICS/PDF Statistik wurde zurückgesetzt.</div>' : ''}
-  ${kvResetMsg ? '<div class="meta" style="color:#0a6;">Global Counter (KV) wurde auf 0 gesetzt.</div>' : ''}
+  ${kvResetMsg ? '<div class="meta" style="color:#0a6;">Global Counter wurde zurückgesetzt.</div>' : ''}
 
   <div style="display:flex; gap:10px; flex-wrap:wrap; margin:0 0 14px;">
     <form method="post" action="/stats?key=${esc(key)}" style="margin:0;">
