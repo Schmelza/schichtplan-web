@@ -1,5 +1,3 @@
-import { ensureStatsSchema } from "./_common.js";
-
 const ADMIN_KEY = "Rammstein1"; // <-- change this to something secret, e.g. "Johannes123!"
 
 function esc(s){
@@ -20,9 +18,7 @@ export async function onRequestGet({ request, env }) {
   }
 
   let rows = [];
-  try {
-    await ensureStatsSchema(env?.STATS_DB);
-    const res = await env.STATS_DB.prepare(`
+  try {    const res = await env.STATS_DB.prepare(`
       SELECT fiber, team, year, count, last_ts,
              ics_count, last_ics_ts,
              pdfv1_count, last_pdfv1_ts,
@@ -35,9 +31,8 @@ export async function onRequestGet({ request, env }) {
         team ASC,
         year DESC
     `).all();
-    rows = res.results || [];
-  } catch (e) {
-    return new Response("DB error. Check STATS_DB binding.", { status: 500 });
+    rows = res.results || [];  } catch (e) {
+    return new Response("DB error: " + (e?.message || String(e)), { status: 500 });
   }
 
   const total = rows.reduce((a, r) => a + (Number(r.count) || 0), 0);
