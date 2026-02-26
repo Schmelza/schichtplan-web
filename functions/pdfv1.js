@@ -1,5 +1,5 @@
 
-import { clampAllowedYear, parseIntParam, shiftForDate, isHolidayRLP, getFerienSetForYear, isFerien, TEL } from "./_common.js";
+import { clampAllowedYear, parseIntParam, shiftForDate, isHolidayRLP, getFerienSetForYear, isFerien, TEL, statsInc } from "./_common.js";
 
 const SHIFT_COLORS = { "F": "#ffff00", "S": "#ff0000", "N": "#00b0f0" };
 const HOLIDAY_BG = "#ffc8c8";
@@ -155,7 +155,7 @@ function buildPdf({ title, printedBy, telLines, drawContent }){
 }
 
 
-export async function onRequestGet({ request }) {
+export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
   const fiber = parseIntParam(url, "fiber");
   const team  = parseIntParam(url, "team");
@@ -348,7 +348,14 @@ centerInBox(telLines[2], 4);
       box(legX+270, legY, 70, 16, SHIFT_COLORS["N"], "N = Nacht");
     }
   });
-const filename = `Schichtplan-Fiber${fiber}-P${team}-${year}-v1.pdf`;
+  const filename = `Schichtplan-Fiber${fiber}-P${team}-${year}-v1.pdf`;
+
+  // ---- Stats (D1): PDF v1 opened / downloaded ----
+  try {
+    await statsInc(env?.STATS_DB, { fiber, team, year, kind: "pdfv1" });
+  } catch (e) {
+    console.log("STATS_DB update failed (pdfv1)", e);
+  }
   const isDownload = (dl === "1");
   const disposition = isDownload ? "attachment" : "inline";
   // iOS is stubborn with PDFs; for dl=1 we also use octet-stream to encourage "Download/Files"

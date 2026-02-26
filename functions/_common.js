@@ -183,7 +183,79 @@ function safeHtml(s){
   return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 }
 
+// --- D1 Stats helpers -------------------------------------------------------
+// We keep stats in a single row per (fiber, team, year).
+// The schema can evolve; we apply safe, idempotent migrations at runtime.
+async function ensureStatsSchema(db){
+  if (!db) return;
+
+  // Base table (legacy columns kept).
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS stats (
+      fiber INTEGER NOT NULL,
+      team  INTEGER NOT NULL,
+      year  INTEGER NOT NULL,
+      count INTEGER NOT NULL DEFAULT 0,
+      last_ts TEXT,
+      PRIMARY KEY (fiber, team, year)
+    );
+  `);
+
+  // New columns for post-generate actions.
+  const alters = [
+    "ALTER TABLE stats ADD COLUMN ics_count INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE stats ADD COLUMN last_ics_ts TEXT",
+    "ALTER TABLE stats ADD COLUMN pdfv1_count INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE stats ADD COLUMN last_pdfv1_ts TEXT",
+    "ALTER TABLE stats ADD COLUMN pdfv2_count INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE stats ADD COLUMN last_pdfv2_ts TEXT",
+  ];
+  for (const sql of alters){
+    try { await db.exec(sql + ";"); } catch (_) { /* ignore duplicate-column errors */ }
+  }
+}
+
+async function statsInc(db, { fiber, team, year, kind }){
+  // kind: 'generate' | 'ics' | 'pdfv1' | 'pdfv2'
+  if (!db) return;
+  await ensureStatsSchema(db);
+
+  const now = new Date().toISOString();
+  if (kind === 'generate'){
+    await db.prepare(`
+      INSERT INTO stats (fiber, team, year, count, last_ts)
+      VALUES (?, ?, ?, 1, ?)
+      ON CONFLICT(fiber,team,year)
+      DO UPDATE SET count = count + 1, last_ts = excluded.last_ts
+    `).bind(fiber, team, year, now).run();
+    return;
+  }
+
+  const map = {
+    ics:   { c: "ics_count",   t: "last_ics_ts" },
+    pdfv1: { c: "pdfv1_count", t: "last_pdfv1_ts" },
+    pdfv2: { c: "pdfv2_count", t: "last_pdfv2_ts" },
+  };
+  const m = map[kind];
+  if (!m) return;
+
+  // Ensure row exists, then increment.
+  await db.prepare(`
+    INSERT INTO stats (fiber, team, year, count, last_ts)
+    VALUES (?, ?, ?, 0, NULL)
+    ON CONFLICT(fiber,team,year) DO NOTHING
+  `).bind(fiber, team, year).run();
+
+  await db.prepare(`
+    UPDATE stats
+    SET ${m.c} = COALESCE(${m.c},0) + 1,
+        ${m.t} = ?
+    WHERE fiber=? AND team=? AND year=?
+  `).bind(now, fiber, team, year).run();
+}
+
 export {
   MIN_YEAR, TEL, parseIntParam, clampAllowedYear, shiftForDate,
-  isHolidayRLP, getFerienSetForYear, isFerien, teamLabel, safeHtml
+  isHolidayRLP, getFerienSetForYear, isFerien, teamLabel, safeHtml,
+  ensureStatsSchema, statsInc
 };

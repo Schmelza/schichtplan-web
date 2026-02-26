@@ -1,4 +1,4 @@
-import { parseIntParam } from "./_common.js";
+import { ensureStatsSchema } from "./_common.js";
 
 const ADMIN_KEY = "Rammstein1"; // <-- change this to something secret, e.g. "Johannes123!"
 
@@ -21,8 +21,12 @@ export async function onRequestGet({ request, env }) {
 
   let rows = [];
   try {
+    await ensureStatsSchema(env?.STATS_DB);
     const res = await env.STATS_DB.prepare(`
-      SELECT fiber, team, year, count, last_ts
+      SELECT fiber, team, year, count, last_ts,
+             ics_count, last_ics_ts,
+             pdfv1_count, last_pdfv1_ts,
+             pdfv2_count, last_pdfv2_ts
       FROM stats
       ORDER BY
         CASE WHEN last_ts IS NULL THEN 1 ELSE 0 END,
@@ -40,12 +44,17 @@ export async function onRequestGet({ request, env }) {
 
   const body = rows.map(r => {
     const last = r.last_ts ? new Date(r.last_ts).toLocaleString("de-DE") : "-";
+    const lastIcs  = r.last_ics_ts  ? new Date(r.last_ics_ts).toLocaleString("de-DE") : "-";
+    const lastP1   = r.last_pdfv1_ts ? new Date(r.last_pdfv1_ts).toLocaleString("de-DE") : "-";
+    const lastP2   = r.last_pdfv2_ts ? new Date(r.last_pdfv2_ts).toLocaleString("de-DE") : "-";
     return `<tr>
       <td>${esc(r.fiber)}</td>
       <td>P${esc(r.team)}</td>
       <td>${esc(r.year)}</td>
-      <td><b>${esc(r.count)}</b></td>
-      <td>${esc(last)}</td>
+      <td><b>${esc(r.count)}</b><div class="sub">${esc(last)}</div></td>
+      <td><b>${esc(r.ics_count ?? 0)}</b><div class="sub">${esc(lastIcs)}</div></td>
+      <td><b>${esc(r.pdfv1_count ?? 0)}</b><div class="sub">${esc(lastP1)}</div></td>
+      <td><b>${esc(r.pdfv2_count ?? 0)}</b><div class="sub">${esc(lastP2)}</div></td>
     </tr>`;
   }).join("");
 
@@ -62,6 +71,7 @@ export async function onRequestGet({ request, env }) {
   table{border-collapse:collapse;width:100%}
   th,td{border:1px solid #222;padding:8px 10px;text-align:left;font-size:14px}
   th{background:#f2f2f2}
+  .sub{margin-top:4px;font-size:11px;color:#666;line-height:1.2}
   .small{font-size:12px;color:#555;margin-top:10px}
 </style>
 </head>
@@ -75,16 +85,18 @@ export async function onRequestGet({ request, env }) {
         <th>Fiber</th>
         <th>Team</th>
         <th>Jahr</th>
-        <th>Zähler</th>
-        <th>Letzte Generierung</th>
+        <th>Generieren</th>
+        <th>ICS</th>
+        <th>PDF v1</th>
+        <th>PDF v2</th>
       </tr>
     </thead>
     <tbody>
-      ${body || '<tr><td colspan="5">Noch keine Daten.</td></tr>'}
+      ${body || '<tr><td colspan="7">Noch keine Daten.</td></tr>'}
     </tbody>
   </table>
 
-  <div class="small">Hinweis: zählt nur den Generieren Button</div>
+  <div class="small">Hinweis: „Generieren“ zählt nur den Generieren-Button (QR/ICS). ICS/PDF zählen die jeweiligen Downloads/Öffnungen.</div>
 </body>
 </html>`;
 

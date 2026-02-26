@@ -1,4 +1,4 @@
-import { clampAllowedYear, parseIntParam } from "./_common.js";
+import { clampAllowedYear, parseIntParam, statsInc } from "./_common.js";
 
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
@@ -35,13 +35,7 @@ export async function onRequestGet({ request, env }) {
   // ---- Stats (D1) ----
   // Counts only REAL "Generieren" triggers (this endpoint).
   try {
-    const nowIso = new Date().toISOString();
-    await env.STATS_DB.prepare(`
-      INSERT INTO stats (fiber, team, year, count, last_ts)
-      VALUES (?, ?, ?, 1, ?)
-      ON CONFLICT(fiber, team, year)
-      DO UPDATE SET count = stats.count + 1, last_ts = excluded.last_ts
-    `).bind(fiber, team, year, nowIso).run();
+    await statsInc(env?.STATS_DB, { fiber, team, year, kind: "generate" });
   } catch (e) {
     // Never break generation if stats fails
     console.log("STATS_DB update failed", e);

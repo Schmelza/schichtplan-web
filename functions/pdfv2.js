@@ -1,5 +1,5 @@
 
-import { clampAllowedYear, parseIntParam, shiftForDate, isHolidayRLP, getFerienSetForYear, isFerien, TEL } from "./_common.js";
+import { clampAllowedYear, parseIntParam, shiftForDate, isHolidayRLP, getFerienSetForYear, isFerien, TEL, statsInc } from "./_common.js";
 
 const SHIFT_COLORS = { "F": "#ffff00", "S": "#ff0000", "N": "#00b0f0" };
 const HOLIDAY_BG = "#ffc8c8";
@@ -162,7 +162,7 @@ function textWidthCourier(str, size){
 }
 
 
-export async function onRequestGet({ request }) {
+export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
   const fiber = parseIntParam(url, "fiber");
   const team  = parseIntParam(url, "team");
@@ -348,6 +348,13 @@ restore();
   });
 
   const filename = `schichtplan-${year}-fiber${fiber}-p${team}-v2.pdf`;
+
+  // ---- Stats (D1): PDF v2 opened / downloaded ----
+  try {
+    await statsInc(env?.STATS_DB, { fiber, team, year, kind: "pdfv2" });
+  } catch (e) {
+    console.log("STATS_DB update failed (pdfv2)", e);
+  }
   return new Response(pdfBytes, {
     headers: {
       "content-type": "application/pdf",
