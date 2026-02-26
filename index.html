@@ -375,20 +375,22 @@
     }
   });
 
-})();
 
-
-  // TRACK_ICS_CAPTURE: count ICS/RAW/WebCal usage
+  // TRACK_ICS_CAPTURE: count ICS/RAW/WebCal usage (counts clicks)
   document.addEventListener('click', (ev) => {
     try{
       const a = ev.target && ev.target.closest ? ev.target.closest('a') : null;
       if(!a) return;
       const href = a.getAttribute('href') || '';
-      if (href.startsWith('/ics') || href.startsWith('webcal:') || href.includes('/ics?')) {
-        trackEvent('ics');
+      // count clicks on ICS/RAW and webcal subscription links
+      if (href.startsWith('/ics') || href.includes('/ics?') || href.startsWith('webcal:')) {
+        trackEvent('ics'); // +1 per click
       }
     }catch(e){}
   }, true);
+
+
+})();
 
 </script>
 
@@ -400,19 +402,6 @@
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     });
   }
-
-
-  // TRACK_ICS_CAPTURE: count ICS/RAW/WebCal usage
-  document.addEventListener('click', (ev) => {
-    try{
-      const a = ev.target && ev.target.closest ? ev.target.closest('a') : null;
-      if(!a) return;
-      const href = a.getAttribute('href') || '';
-      if (href.startsWith('/ics') || href.startsWith('webcal:') || href.includes('/ics?')) {
-        trackEvent('ics');
-      }
-    }catch(e){}
-  }, true);
 
 </script>
 
