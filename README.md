@@ -18,7 +18,11 @@ Sollten euch Fehler auffallen dürft ihr diese gerne behalten ;)
 ## Cloudflare Setup
 
 - Pages Project: schichtplan-web
-- KV Namespace: COUNTER_KV
+- KV Namespace:
+  - COUNTER_KV
+  - STATS_DB
 - KV Binding:
   - Variable: COUNTER_KV
+  - schichtplan_stats
+- D1 Database for Statistics
 - Domain: schichtplan-web.pages.dev
