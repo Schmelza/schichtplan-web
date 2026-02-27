@@ -140,29 +140,29 @@ export async function onRequestGet({ request, env }) {
 </style>
 </head>
 <body>
-  <h1>User Statistik</h1>
+  <h1>User & Action Statistik</h1>
   <div class="meta">Gesamt Zähler: <b>${esc(kvGlobal)}</b></div>
-  ${resetMsg ? '<div class="meta" style="color:#0a6;">ICS/PDF Statistik wurde zurückgesetzt.</div>' : ''}
-  ${kvResetMsg ? '<div class="meta" style="color:#0a6;">Global Counter wurde zurückgesetzt.</div>' : ''}
+  ${resetMsg ? '<div class="meta" style="color:#0a6;">Action Stats Set to 0.</div>' : ''}
+  ${kvResetMsg ? '<div class="meta" style="color:#0a6;">Global Counter Set to 0.</div>' : ''}
 
   <div style="display:flex; gap:10px; flex-wrap:wrap; margin:0 0 14px;">
     <form method="post" action="/stats?key=${esc(key)}" style="margin:0;">
       <input type="hidden" name="action" value="reset_all"/>
-      <button type="submit" onclick="return confirm('Wirklich ALLE Counter (ICS/PDF) auf 0 setzen?');">
+      <button type="submit" onclick="return confirm('Wirklich ALLE Actions auf 0 setzen???');">
         Reset Action Counter
       </button>
     </form>
 
     <form method="post" action="/stats?key=${esc(key)}" style="margin:0;">
       <input type="hidden" name="action" value="reset_kv"/>
-      <button type="submit" onclick="return confirm('Wirklich den Global Counter (KV) auf 0 setzen?');">
+      <button type="submit" onclick="return confirm('Global Counter auf 0 setzen???');">
         Reset Global Counter
       </button>
     </form>
 
     <form method="post" action="/stats?key=${esc(key)}" style="margin:0;">
       <input type="hidden" name="action" value="reset_all_and_kv"/>
-      <button type="submit" onclick="return confirm('Wirklich ALLES zurücksetzen (ICS/PDF + Global KV)?');">
+      <button type="submit" onclick="return confirm('Wirklich ALLES resetten???');">
         Reset All
       </button>
     </form>
@@ -180,7 +180,7 @@ export async function onRequestGet({ request, env }) {
       </tr>
     </thead>
     <tbody>
-      ${body || '<tr><td colspan="6">Noch keine Daten.</td></tr>'}
+      ${body || '<tr><td colspan="6">Noch keine Daten!</td></tr>'}
     </tbody>
   </table>
 
