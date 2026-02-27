@@ -149,21 +149,21 @@ export async function onRequestGet({ request, env }) {
     <form method="post" action="/stats?key=${esc(key)}" style="margin:0;">
       <input type="hidden" name="action" value="reset_all"/>
       <button type="submit" onclick="return confirm('Wirklich ALLE Counter (ICS/PDF) auf 0 setzen?');">
-        ICS/PDF Statistik zurücksetzen
+        Reset Action Counter
       </button>
     </form>
 
     <form method="post" action="/stats?key=${esc(key)}" style="margin:0;">
       <input type="hidden" name="action" value="reset_kv"/>
       <button type="submit" onclick="return confirm('Wirklich den Global Counter (KV) auf 0 setzen?');">
-        Global Counter (KV) zurücksetzen
+        Reset Global Counter
       </button>
     </form>
 
     <form method="post" action="/stats?key=${esc(key)}" style="margin:0;">
       <input type="hidden" name="action" value="reset_all_and_kv"/>
       <button type="submit" onclick="return confirm('Wirklich ALLES zurücksetzen (ICS/PDF + Global KV)?');">
-        Alles zurücksetzen
+        Reset All
       </button>
     </form>
   </div>
