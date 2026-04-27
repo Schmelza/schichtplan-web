@@ -158,6 +158,37 @@
   Generierungen insgesamt: 0
 </div>
 
+<!-- FAQ -->
+<div style="margin-top:24px;">
+  <button onclick="toggleFAQ()" class="secondary" style="width:auto;margin:0 auto;display:block;padding:8px 12px;font-size:14px;">
+    FAQ anzeigen / ausblenden
+  </button>
+
+  <div id="faqBox" style="display:none;margin-top:12px;" class="card">
+    <h2 style="font-size:18px;margin-bottom:10px;">FAQ – Schichtkalender</h2>
+
+    <div class="hint">
+      <p><strong>Was macht dieser Schichtkalender?</strong><br>
+      Dieser webbasierte Schichtkalender erstellt automatisch einen Schichtplan als ICS-Kalender für iOS, Android und PC.</p>
+
+      <p><strong>Wie kann ich den Schichtplan nutzen?</strong><br>
+      Du kannst den Kalender als ICS-Datei herunterladen oder als Webcal-Abo direkt in dein Smartphone importieren.</p>
+
+      <p><strong>Funktioniert das mit iPhone und Android?</strong><br>
+      Ja, der Schichtkalender funktioniert mit iOS, Android und allen gängigen Kalender-Apps.</p>
+
+      <p><strong>Für wen ist der Schichtkalender gedacht?</strong><br>
+      Der Generator ist speziell für die Huhtamaki Fiber Schichtplanung gedacht.</p>
+
+      <p><strong>Wer hat den Schichtkalender erstellt?</strong><br>
+      Entwickelt von Johannes Trippen.</p>
+
+      <p><strong>Kontakt:</strong><br>
+      Bei Fragen einfach direkt an Johannes Trippen wenden.</p>
+    </div>
+  </div>
+</div>
+
 </div>
 
 <script>
@@ -448,6 +479,14 @@
     });
   }
 
+</script>
+
+<script>
+  function toggleFAQ(){
+    const el = document.getElementById("faqBox");
+    if(!el) return;
+    el.style.display = (el.style.display === "none" || el.style.display === "") ? "block" : "none";
+  }
 </script>
 
 <script>
