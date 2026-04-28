@@ -84,6 +84,66 @@
     .qrbox img{width:100%;max-width:220px;height:auto;display:block;margin:0 auto 10px;}
     .small{font-size:12px;color:var(--muted);word-break:break-all;}
 
+
+    .printPreviewWrap{
+      position:relative;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+    }
+    .previewEye{
+      border:0;
+      border-radius:10px;
+      padding:8px 10px;
+      background:#f3f4f6;
+      color:#111827;
+      font-size:16px;
+      cursor:pointer;
+      line-height:1;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:none;
+    }
+    .previewEye:hover{
+      background:#e5e7eb;
+    }
+    .previewBox{
+      display:none;
+      position:absolute;
+      top:115%;
+      left:50%;
+      transform:translateX(-50%);
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:12px;
+      box-shadow:var(--shadow);
+      padding:8px;
+      z-index:80;
+      width:min(520px, 90vw);
+    }
+    .previewBox img{
+      width:100%;
+      height:auto;
+      display:block;
+      border-radius:8px;
+    }
+    @media (max-width:820px){
+      .printPreviewWrap{
+        width:100%;
+      }
+      .printPreviewWrap > button.secondary:first-child{
+        flex:1;
+        justify-content:center;
+      }
+      .previewBox{
+        left:0;
+        transform:none;
+        width:calc(100vw - 48px);
+      }
+    }
+
+
   </style>
 
 </head>
@@ -124,8 +184,21 @@
 
   <div class="actions">
     <button id="btnGenerate" class="primary" disabled>Generieren</button>
-    <button id="btnPrintV1" class="secondary" disabled>Jahresplan Monate untereinander</button>
-    <button id="btnPrintV2" class="secondary" disabled>Jahresplan Monate nebeneinander</button>
+    <div class="printPreviewWrap">
+      <button id="btnPrintV1" class="secondary" disabled>Jahresplan Monate untereinander</button>
+      <button type="button" class="previewEye" onclick="togglePdfPreview(event, 'v1')" aria-label="Vorschau Jahresplan Monate untereinander" title="Vorschau anzeigen">👁</button>
+      <div id="pdfPreview-v1" class="previewBox">
+        <img src="/pdfv1_preview.png" alt="Vorschau Jahresplan Monate untereinander">
+      </div>
+    </div>
+
+    <div class="printPreviewWrap">
+      <button id="btnPrintV2" class="secondary" disabled>Jahresplan Monate nebeneinander</button>
+      <button type="button" class="previewEye" onclick="togglePdfPreview(event, 'v2')" aria-label="Vorschau Jahresplan Monate nebeneinander" title="Vorschau anzeigen">👁</button>
+      <div id="pdfPreview-v2" class="previewBox">
+        <img src="/pdfv2_preview.png" alt="Vorschau Jahresplan Monate nebeneinander">
+      </div>
+    </div>
   </div>
 
   <div class="err" id="err"></div>
@@ -480,6 +553,28 @@
     if(!el) return;
     el.style.display = (el.style.display === "none" || el.style.display === "") ? "block" : "none";
   }
+</script>
+
+<script>
+  function togglePdfPreview(ev, type){
+    if(ev){
+      ev.preventDefault();
+      ev.stopPropagation();
+    }
+
+    const current = document.getElementById("pdfPreview-" + type);
+    if(!current) return;
+
+    const isOpen = current.style.display === "block";
+    document.querySelectorAll(".previewBox").forEach(el => el.style.display = "none");
+    current.style.display = isOpen ? "none" : "block";
+  }
+
+  document.addEventListener("click", function(ev){
+    if(!ev.target.closest(".printPreviewWrap")){
+      document.querySelectorAll(".previewBox").forEach(el => el.style.display = "none");
+    }
+  });
 </script>
 
 <script>
