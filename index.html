@@ -86,7 +86,6 @@
 
 
     .printPreviewWrap{
-      position:relative;
       display:inline-flex;
       align-items:center;
       gap:6px;
@@ -108,32 +107,32 @@
     .previewEye:hover{
       background:#e5e7eb;
     }
-    .previewBox{
-      opacity:0;
-      pointer-events:none;
-      position:absolute;
-      top:115%;
-      left:50%;
-      transform:translateX(-50%) translateY(10px);
+    .pdfPreviewContainer{
+      display:none;
+      margin-top:16px;
+      border-top:1px dashed var(--border);
+      padding-top:16px;
+    }
+    .pdfPreviewBox{
+      max-width:720px;
+      margin:0 auto;
       background:#fff;
       border:1px solid var(--border);
       border-radius:12px;
       box-shadow:var(--shadow);
-      padding:8px;
-      z-index:80;
-      width:min(520px, 90vw);
-      transition:opacity .2s ease, transform .2s ease;
+      padding:10px;
+      text-align:center;
     }
-    .previewBox img{
+    .pdfPreviewBox h3{
+      margin:0 0 8px;
+      font-size:14px;
+      color:var(--muted);
+    }
+    .pdfPreviewBox img{
       width:100%;
       height:auto;
       display:block;
       border-radius:8px;
-    }
-    .previewBox.show{
-      opacity:1;
-      pointer-events:auto;
-      transform:translateX(-50%) translateY(0);
     }
     @media (max-width:820px){
       .printPreviewWrap{
@@ -143,13 +142,8 @@
         flex:1;
         justify-content:center;
       }
-      .previewBox{
-        left:0;
-        transform:translateY(10px);
-        width:calc(100vw - 48px);
-      }
-      .previewBox.show{
-        transform:translateY(0);
+      .pdfPreviewBox{
+        max-width:100%;
       }
     }
 
@@ -194,20 +188,22 @@
 
   <div class="actions">
     <button id="btnGenerate" class="primary" disabled>Generieren</button>
+
     <div class="printPreviewWrap">
       <button id="btnPrintV1" class="secondary" disabled>Jahresplan Monate untereinander</button>
-      <button type="button" class="previewEye" onclick="togglePdfPreview(event, 'v1')" aria-label="Vorschau Jahresplan Monate untereinander" title="Vorschau anzeigen">👁</button>
-      <div id="pdfPreview-v1" class="previewBox">
-        <img src="/pdfv1_preview.png" alt="Vorschau Jahresplan Monate untereinander">
-      </div>
+      <button type="button" class="previewEye" onclick="showPdfPreview(event, 'v1')" aria-label="Vorschau Jahresplan Monate untereinander" title="Vorschau anzeigen">👁</button>
     </div>
 
     <div class="printPreviewWrap">
       <button id="btnPrintV2" class="secondary" disabled>Jahresplan Monate nebeneinander</button>
-      <button type="button" class="previewEye" onclick="togglePdfPreview(event, 'v2')" aria-label="Vorschau Jahresplan Monate nebeneinander" title="Vorschau anzeigen">👁</button>
-      <div id="pdfPreview-v2" class="previewBox">
-        <img src="/pdfv2_preview.png" alt="Vorschau Jahresplan Monate nebeneinander">
-      </div>
+      <button type="button" class="previewEye" onclick="showPdfPreview(event, 'v2')" aria-label="Vorschau Jahresplan Monate nebeneinander" title="Vorschau anzeigen">👁</button>
+    </div>
+  </div>
+
+  <div id="pdfPreviewContainer" class="pdfPreviewContainer">
+    <div class="pdfPreviewBox">
+      <h3 id="pdfPreviewTitle">PDF Vorschau</h3>
+      <img id="pdfPreviewImg" src="" alt="PDF Vorschau">
     </div>
   </div>
 
@@ -232,41 +228,15 @@
   </div>
 </div>
 
+<div class="hint" style="text-align:center;margin-top:14px;">
+  Tipp: iOS kann alle 3 Download´s importieren und QR-Codes Scannen. Android in der Regel den ICS direkt Download!
+</div>
+
 <!-- COUNTER (unauffällig) -->
 <div id="genCounter" class="hint" style="text-align:center;font-size:12px;margin-top:6px;">
   Generierungen insgesamt: 0
 </div>
 
-<!-- FAQ -->
-<div style="margin-top:18px;">
-  <button onclick="toggleFAQ()" class="secondary" style="width:auto;margin:0 auto;display:block;padding:8px 12px;font-size:14px;">
-    FAQ & Anleitung anzeigen
-  </button>
-
-  <div id="faqBox" style="display:none;margin-top:12px;" class="card">
-    <h2 style="font-size:18px;margin-bottom:10px;">FAQ & Anleitung</h2>
-
-    <div class="hint" style="font-size:10px;line-height:1.2;">
-      <p><strong>Wie nutze ich den Schichtkalender?</strong><br>
-      Abteilung wählen, Team auswählen, Jahr festlegen und anschließend auf „Generieren“ klicken.</p>
-
-      <p><strong>Welche Downloads gibt es?</strong><br>
-      ICS ist die Kalenderdatei, RAW ist der direkte Download und Webcal ist ein Kalender-Abo.</p>
-
-      <p><strong>iPhone / iOS</strong><br>
-      iOS kann ICS, RAW und Webcal nutzen. Außerdem können die QR-Codes direkt mit dem iPhone gescannt werden.</p>
-
-      <p><strong>Android</strong><br>
-      Android nutzt in der Regel den ICS- oder RAW-Download und importiert diesen in die Kalender-App.</p>
-
-      <p><strong>Für wen ist der Schichtkalender gedacht?</strong><br>
-      Der Generator ist speziell für die Huhtamaki Fiber Schichtplanung gedacht und funktioniert auf Smartphone, PC und Tablet.</p>
-
-      <p><strong>Kontakt</strong><br>
-      Bei Fragen einfach direkt an Johannes Trippen wenden.</p>
-    </div>
-  </div>
-</div>
 </div>
 
 <script>
@@ -560,42 +530,39 @@
 </script>
 
 <script>
-  function toggleFAQ(){
-    const el = document.getElementById("faqBox");
-    if(!el) return;
-    el.style.display = (el.style.display === "none" || el.style.display === "") ? "block" : "none";
-  }
-</script>
-
-<script>
-  function togglePdfPreview(ev, type){
+  function showPdfPreview(ev, type){
     if(ev){
       ev.preventDefault();
       ev.stopPropagation();
     }
 
-    const current = document.getElementById("pdfPreview-" + type);
-    if(!current) return;
+    const container = document.getElementById("pdfPreviewContainer");
+    const img = document.getElementById("pdfPreviewImg");
+    const title = document.getElementById("pdfPreviewTitle");
+    if(!container || !img || !title) return;
 
-    const isOpen = current.classList.contains("show");
-    document.querySelectorAll(".previewBox").forEach(el => el.classList.remove("show"));
+    const currentType = container.getAttribute("data-preview");
+    const isOpen = container.style.display === "block" && currentType === type;
 
-    if(!isOpen){
-      current.classList.add("show");
+    if(isOpen){
+      container.style.display = "none";
+      container.removeAttribute("data-preview");
+      img.src = "";
+      return;
     }
-  }
 
-  document.addEventListener("click", function(ev){
-    if(!ev.target.closest(".printPreviewWrap")){
-      document.querySelectorAll(".previewBox").forEach(el => el.classList.remove("show"));
+    if(type === "v1"){
+      title.textContent = "Vorschau: Jahresplan Monate untereinander";
+      img.src = "/pdfv1_preview.png";
+      img.alt = "Vorschau Jahresplan Monate untereinander";
+    } else {
+      title.textContent = "Vorschau: Jahresplan Monate nebeneinander";
+      img.src = "/pdfv2_preview.png";
+      img.alt = "Vorschau Jahresplan Monate nebeneinander";
     }
-  });
-</script>
 
-<script>
-  // Google Translate Website-Wrapper blockieren
-  if (location.hostname.includes("translate.goog")) {
-    window.location.href = "https://schichtplan-web.pages.dev/";
+    container.setAttribute("data-preview", type);
+    container.style.display = "block";
   }
 </script>
 
