@@ -302,8 +302,8 @@
 
     <div>
       <label for="year">Jahr</label>
-      <select id="year">
-        <option value="" selected disabled>Bitte wählen…</option>
+      <select id="year" disabled>
+        <option value="" selected disabled>Bitte zuerst Team wählen…</option>
       </select>
       <div class="hint" id="yearHint"></div>
     </div>
@@ -520,12 +520,29 @@
     return Number.isFinite(y) && y >= startYear && y <= safeEndYear;
   }
 
+  function updateYearState(){
+    const hasTeam = !!teamEl.value;
+    yearEl.disabled = !hasTeam;
+
+    if(!hasTeam){
+      yearEl.value = '';
+    }
+
+    if(yearEl.options.length > 0){
+      yearEl.options[0].textContent = hasTeam ? 'Bitte wählen…' : 'Bitte zuerst Team wählen…';
+    }
+  }
+
   function updateButtons(){
+    updateYearState();
+
     const ok = isValidSelection();
     btnGenerate.disabled = !ok;
     btnPrintV1.disabled  = !ok || !hasGenerated;
     btnPrintV2.disabled  = !ok || !hasGenerated;
   }
+
+  let hasGenerated = false;
 
   setTeamOptionsForFiber('');
   updateButtons();
@@ -535,10 +552,23 @@
     setTeamOptionsForFiber(fiberEl.value);
     setError('');
     outEl.style.display = 'none';
+    hasGenerated = false;
+    yearEl.value = '';
     updateButtons();
   });
-  teamEl.addEventListener('change', () => { setError(''); updateButtons(); });
-  yearEl.addEventListener('change', () => { setError(''); updateButtons(); });
+  teamEl.addEventListener('change', () => {
+    setError('');
+    outEl.style.display = 'none';
+    hasGenerated = false;
+    yearEl.value = '';
+    updateButtons();
+  });
+  yearEl.addEventListener('change', () => {
+    setError('');
+    outEl.style.display = 'none';
+    hasGenerated = false;
+    updateButtons();
+  });
 
   function openPrint(which){
     if(!isValidSelection()) return;
