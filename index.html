@@ -721,9 +721,9 @@
     const overlay = document.getElementById("pdfPreviewOverlay");
     if(!overlay || !overlay.classList.contains("show")) return;
 
-    if(!ev.target.closest("#pdfPreviewOverlay") && !ev.target.closest(".previewEye")){
-      hidePdfPreview();
-    }
+    // Sobald die Vorschau offen ist, schließt ein Tipp/Klick irgendwo auf der Seite.
+    // Klicks auf das Auge selbst werden in showPdfPreview() per stopPropagation abgefangen.
+    hidePdfPreview();
   });
 
   document.addEventListener("keydown", function(ev){
