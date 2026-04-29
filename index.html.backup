@@ -84,11 +84,198 @@
     .qrbox img{width:100%;max-width:220px;height:auto;display:block;margin:0 auto 10px;}
     .small{font-size:12px;color:var(--muted);word-break:break-all;}
 
-  </style>
+
+    .printPreviewWrap{
+      position:relative;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+    }
+    .previewEye{
+      border:0;
+      border-radius:10px;
+      padding:8px 10px;
+      background:#f3f4f6;
+      color:#111827;
+      font-size:16px;
+      cursor:pointer;
+      line-height:1;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:none;
+    }
+    .previewEye:hover{
+      background:#e5e7eb;
+    }
+    .previewBox{
+      opacity:0;
+      pointer-events:none;
+      position:absolute;
+      top:115%;
+      left:50%;
+      transform:translateX(-50%) translateY(10px);
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:12px;
+      box-shadow:var(--shadow);
+      padding:8px;
+      z-index:80;
+      width:min(520px, 90vw);
+      transition:opacity .2s ease, transform .2s ease;
+    }
+    .previewBox img{
+      width:100%;
+      height:auto;
+      display:block;
+      border-radius:8px;
+    }
+    .previewBox.show{
+      opacity:1;
+      pointer-events:auto;
+      transform:translateX(-50%) translateY(0);
+    }
+    @media (max-width:820px){
+      .printPreviewWrap{
+        width:100%;
+      }
+      .printPreviewWrap > button.secondary:first-child{
+        flex:1;
+        justify-content:center;
+      }
+      .previewBox{
+        left:0;
+        transform:translateY(10px);
+        width:calc(100vw - 48px);
+      }
+      .previewBox.show{
+        transform:translateY(0);
+      }
+    }
+
+
+
+    .printPreviewWrap{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+    }
+    .previewEye{
+      border:0;
+      border-radius:10px;
+      padding:8px 10px;
+      background:#f3f4f6;
+      color:#111827;
+      font-size:16px;
+      cursor:pointer;
+      line-height:1;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:none;
+    }
+    .previewEye:hover{
+      background:#e5e7eb;
+    }
+    .pdfPreviewOverlay{
+      opacity:0;
+      pointer-events:none;
+      position:fixed;
+      top:96px;
+      left:50%;
+      transform:translateX(-50%) translateY(10px);
+      width:min(760px, calc(100vw - 32px));
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:14px;
+      box-shadow:0 18px 50px rgba(0,0,0,.16);
+      padding:12px;
+      z-index:999;
+      transition:opacity .2s ease, transform .2s ease;
+    }
+    .pdfPreviewOverlay.show{
+      opacity:1;
+      pointer-events:auto;
+      transform:translateX(-50%) translateY(0);
+    }
+    .pdfPreviewHead{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:8px;
+    }
+    .pdfPreviewHead h3{
+      margin:0;
+      font-size:14px;
+      color:var(--muted);
+    }
+    .pdfPreviewClose{
+      border:0;
+      border-radius:10px;
+      background:#f3f4f6;
+      color:#111827;
+      cursor:pointer;
+      padding:6px 10px;
+      font-size:14px;
+      line-height:1;
+    }
+    .pdfPreviewClose:hover{
+      background:#e5e7eb;
+    }
+    .pdfPreviewOverlay img{
+      width:100%;
+      height:auto;
+      display:block;
+      border-radius:8px;
+      max-height:70vh;
+      object-fit:contain;
+    }
+    @media (max-width:820px){
+      .printPreviewWrap{
+        width:100%;
+      }
+      .printPreviewWrap > button.secondary:first-child{
+        flex:1;
+        justify-content:center;
+      }
+      .pdfPreviewOverlay{
+        top:72px;
+        width:calc(100vw - 20px);
+        padding:10px;
+      }
+      .pdfPreviewOverlay img{
+        max-height:62vh;
+      }
+    }
+
+
+  
+#faqBox{
+  max-width:450px;
+  margin-left:auto;
+  margin-right:auto;
+}
+
+@media (max-width:820px){
+  #faqBox{
+    max-width:100%;
+  }
+}
+
+</style>
 
 </head>
 
 <body>
+<div id="pdfPreviewOverlay" class="pdfPreviewOverlay" aria-hidden="true">
+  <div class="pdfPreviewHead">
+    <h3 id="pdfPreviewTitle">PDF Vorschau</h3>
+    <button type="button" class="pdfPreviewClose" onclick="hidePdfPreview()" aria-label="Vorschau schließen">✕</button>
+  </div>
+  <img id="pdfPreviewImg" src="" alt="PDF Vorschau">
+</div>
+
 <div class="wrap">
 
 <h1>Huhtamaki Fiber Schichtkalender</h1>
@@ -115,8 +302,8 @@
 
     <div>
       <label for="year">Jahr</label>
-      <select id="year">
-        <option value="" selected disabled>Bitte wählen…</option>
+      <select id="year" disabled>
+        <option value="" selected disabled>Bitte zuerst Team wählen…</option>
       </select>
       <div class="hint" id="yearHint"></div>
     </div>
@@ -124,8 +311,16 @@
 
   <div class="actions">
     <button id="btnGenerate" class="primary" disabled>Generieren</button>
-    <button id="btnPrintV1" class="secondary" disabled>Jahresplan Monate untereinander</button>
-    <button id="btnPrintV2" class="secondary" disabled>Jahresplan Monate nebeneinander</button>
+
+    <div class="printPreviewWrap">
+      <button id="btnPrintV1" class="secondary" disabled>Jahresplan Monate untereinander</button>
+      <button type="button" class="previewEye" onclick="showPdfPreview(event, 'v1')" aria-label="Vorschau Jahresplan Monate untereinander" title="Vorschau anzeigen">👁</button>
+    </div>
+
+    <div class="printPreviewWrap">
+      <button id="btnPrintV2" class="secondary" disabled>Jahresplan Monate nebeneinander</button>
+      <button type="button" class="previewEye" onclick="showPdfPreview(event, 'v2')" aria-label="Vorschau Jahresplan Monate nebeneinander" title="Vorschau anzeigen">👁</button>
+    </div>
   </div>
 
   <div class="err" id="err"></div>
@@ -160,8 +355,10 @@
     FAQ & Anleitung anzeigen
   </button>
 
-  <div id="faqBox" style="display:none;margin-top:12px;max-width:700px;margin-left:auto;margin-right:auto;padding:16px;" class="card">
-    <div class="hint" style="font-size:12px;line-height:1.15;max-width:600px;margin:0 auto;">
+  <div id="faqBox" style="display:none;margin:12px auto 0;" class="card">
+    <h2 style="font-size:18px;margin-bottom:10px;">FAQ & Anleitung</h2>
+
+    <div class="hint" style="font-size:10px;line-height:1.2;">
       <p><strong>Wie nutze ich den Schichtkalender?</strong><br>
       Abteilung wählen, Team auswählen, Jahr festlegen und anschließend auf „Generieren“ klicken.</p>
 
@@ -323,12 +520,29 @@
     return Number.isFinite(y) && y >= startYear && y <= safeEndYear;
   }
 
+  function updateYearState(){
+    const hasTeam = !!teamEl.value;
+    yearEl.disabled = !hasTeam;
+
+    if(!hasTeam){
+      yearEl.value = '';
+    }
+
+    if(yearEl.options.length > 0){
+      yearEl.options[0].textContent = hasTeam ? 'Bitte wählen…' : 'Bitte zuerst Team wählen…';
+    }
+  }
+
   function updateButtons(){
+    updateYearState();
+
     const ok = isValidSelection();
     btnGenerate.disabled = !ok;
     btnPrintV1.disabled  = !ok || !hasGenerated;
     btnPrintV2.disabled  = !ok || !hasGenerated;
   }
+
+  let hasGenerated = false;
 
   setTeamOptionsForFiber('');
   updateButtons();
@@ -338,10 +552,23 @@
     setTeamOptionsForFiber(fiberEl.value);
     setError('');
     outEl.style.display = 'none';
+    hasGenerated = false;
+    yearEl.value = '';
     updateButtons();
   });
-  teamEl.addEventListener('change', () => { setError(''); updateButtons(); });
-  yearEl.addEventListener('change', () => { setError(''); updateButtons(); });
+  teamEl.addEventListener('change', () => {
+    setError('');
+    outEl.style.display = 'none';
+    hasGenerated = false;
+    yearEl.value = '';
+    updateButtons();
+  });
+  yearEl.addEventListener('change', () => {
+    setError('');
+    outEl.style.display = 'none';
+    hasGenerated = false;
+    updateButtons();
+  });
 
   function openPrint(which){
     if(!isValidSelection()) return;
@@ -483,10 +710,70 @@
 </script>
 
 <script>
-  // Google Translate Website-Wrapper blockieren
-  if (location.hostname.includes("translate.goog")) {
-    window.location.href = "https://schichtplan-web.pages.dev/";
+  function showPdfPreview(ev, type){
+    if(ev){
+      ev.preventDefault();
+      ev.stopPropagation();
+    }
+
+    const overlay = document.getElementById("pdfPreviewOverlay");
+    const img = document.getElementById("pdfPreviewImg");
+    const title = document.getElementById("pdfPreviewTitle");
+    if(!overlay || !img || !title) return;
+
+    const currentType = overlay.getAttribute("data-preview");
+    const isOpen = overlay.classList.contains("show") && currentType === type;
+
+    if(isOpen){
+      hidePdfPreview();
+      return;
+    }
+
+    if(type === "v1"){
+      title.textContent = "Vorschau: Jahresplan Monate untereinander";
+      img.src = "/pdfv1_preview.png";
+      img.alt = "Vorschau Jahresplan Monate untereinander";
+    } else {
+      title.textContent = "Vorschau: Jahresplan Monate nebeneinander";
+      img.src = "/pdfv2_preview.png";
+      img.alt = "Vorschau Jahresplan Monate nebeneinander";
+    }
+
+    overlay.setAttribute("data-preview", type);
+    overlay.setAttribute("aria-hidden", "false");
+    overlay.classList.add("show");
   }
+
+  function hidePdfPreview(){
+    const overlay = document.getElementById("pdfPreviewOverlay");
+    const img = document.getElementById("pdfPreviewImg");
+    if(!overlay) return;
+
+    overlay.classList.remove("show");
+    overlay.setAttribute("aria-hidden", "true");
+    overlay.removeAttribute("data-preview");
+
+    window.setTimeout(() => {
+      if(!overlay.classList.contains("show") && img){
+        img.src = "";
+      }
+    }, 220);
+  }
+
+  document.addEventListener("click", function(ev){
+    const overlay = document.getElementById("pdfPreviewOverlay");
+    if(!overlay || !overlay.classList.contains("show")) return;
+
+    // Sobald die Vorschau offen ist, schließt ein Tipp/Klick irgendwo auf der Seite.
+    // Klicks auf das Auge selbst werden in showPdfPreview() per stopPropagation abgefangen.
+    hidePdfPreview();
+  });
+
+  document.addEventListener("keydown", function(ev){
+    if(ev.key === "Escape"){
+      hidePdfPreview();
+    }
+  });
 </script>
 
 </body>
