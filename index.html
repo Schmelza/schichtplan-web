@@ -9,6 +9,11 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <meta name="theme-color" content="#2563eb">
 
+  <!-- NEU -->
+  <meta name="application-name" content="Huhtamaki Fiber Schichtkalender">
+  <meta name="apple-mobile-web-app-title" content="Huhtamaki Fiber Schichtkalender">
+  <meta name="author" content="Johannes Trippen">
+
   <!-- SEO -->
   <meta name="description" content="Webbasierter Schichtkalender und Schichtplan Generator für Huhtamaki Fiber. ICS, Webcal und Kalender-Download für iOS, Android, PC und Smartphone.">
   <meta name="google-site-verification" content="0SLe1gKoX4Nx3YoL3joXWe6Bn7NHeJHmnaMPV3LOqCU" />
@@ -22,17 +27,24 @@
   <meta property="og:url" content="https://schichtplan-web.pages.dev">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Huhtamaki Fiber Schichtkalender">
+  <meta property="og:locale" content="de_DE">
 
-  <!-- Google Site Name -->
+  <!-- Google Site Name (FINAL) -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "Huhtamaki Fiber Schichtkalender",
+    "alternateName": "Schichtkalender Generator",
     "url": "https://schichtplan-web.pages.dev/",
-    "author": {
+    "publisher": {
       "@type": "Person",
       "name": "Johannes Trippen"
+    },
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://schichtplan-web.pages.dev/?q={search_term_string}",
+      "query-input": "required name=search_term_string"
     }
   }
   </script>
