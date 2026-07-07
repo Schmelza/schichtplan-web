@@ -4,7 +4,16 @@ function pad(n){ return String(n).padStart(2,'0'); }
 function fmtDT(dt){ // UTC local date-time (floating) like VBA: yyyymmddTHHmmss
   return `${dt.getUTCFullYear()}${pad(dt.getUTCMonth()+1)}${pad(dt.getUTCDate())}T${pad(dt.getUTCHours())}${pad(dt.getUTCMinutes())}${pad(dt.getUTCSeconds())}`;
 }
-function uid(seed){ return `${seed}-${Math.random().toString(16).slice(2)}@schichtplan-web`; }
+function uid(fiber, team, dateObj){
+  // Deterministisch statt zufällig: dieselbe Schicht bekommt bei jeder
+  // Neu-Generierung dieselbe UID. Das ist entscheidend für Kalender-Abos
+  // (webcal) - sonst erkennt der Kalender bei jedem automatischen Refresh
+  // "neue" Events statt eines Updates und legt Dubletten an.
+  const y = dateObj.getUTCFullYear();
+  const m = pad(dateObj.getUTCMonth()+1);
+  const d = pad(dateObj.getUTCDate());
+  return `f${fiber}-p${team}-${y}${m}${d}@schichtplan-web`;
+}
 
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
@@ -52,7 +61,7 @@ export async function onRequestGet({ request, env }) {
     }
 
     out += "BEGIN:VEVENT\r\n";
-    out += `UID:${uid(`${year}${r}`)}\r\n`;
+    out += `UID:${uid(fiber, team, d)}\r\n`;
     out += `DTSTAMP:${fmtDT(new Date())}Z\r\n`;
     out += `DTSTART:${fmtDT(dtStart)}\r\n`;
     out += `DTEND:${fmtDT(dtEnd)}\r\n`;

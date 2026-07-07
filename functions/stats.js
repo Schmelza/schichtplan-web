@@ -1,5 +1,3 @@
-const ADMIN_KEY = "Rammstein1"; // <-- change this to something secret, e.g. "Johannes123!"
-
 function esc(s){
   return String(s ?? "")
     .replaceAll("&","&amp;")
@@ -13,9 +11,10 @@ function esc(s){
 export async function onRequestPost({ request, env }) {
   const url = new URL(request.url);
   const key = url.searchParams.get("key") || "";
+  const adminKey = env?.ADMIN_KEY || "";
 
   const resetMsg = url.searchParams.get("reset") === "1"; 
-  if (key !== ADMIN_KEY) return new Response("Forbidden", { status: 403 });
+  if (!adminKey || key !== adminKey) return new Response("Forbidden", { status: 403 });
 
   let action = "";
   const ct = request.headers.get("content-type") || "";
@@ -70,11 +69,12 @@ export async function onRequestPost({ request, env }) {
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
   const key = url.searchParams.get("key") || "";
+  const adminKey = env?.ADMIN_KEY || "";
 
   const resetMsg = url.searchParams.get("reset") === "1";
   const kvResetMsg = url.searchParams.get("kvreset") === "1";
 
-  if (key !== ADMIN_KEY) {
+  if (!adminKey || key !== adminKey) {
     return new Response("Forbidden", { status: 403 });
   }
 
@@ -140,30 +140,30 @@ export async function onRequestGet({ request, env }) {
 </style>
 </head>
 <body>
-  <h1>User & Action Statistik</h1>
+  <h1>User Statistik</h1>
   <div class="meta">Gesamt Zähler: <b>${esc(kvGlobal)}</b></div>
-  ${resetMsg ? '<div class="meta" style="color:#0a6;">Action Stats Set to 0.</div>' : ''}
-  ${kvResetMsg ? '<div class="meta" style="color:#0a6;">Global Counter Set to 0.</div>' : ''}
+  ${resetMsg ? '<div class="meta" style="color:#0a6;">ICS/PDF Statistik wurde zurückgesetzt.</div>' : ''}
+  ${kvResetMsg ? '<div class="meta" style="color:#0a6;">Global Counter wurde zurückgesetzt.</div>' : ''}
 
   <div style="display:flex; gap:10px; flex-wrap:wrap; margin:0 0 14px;">
     <form method="post" action="/stats?key=${esc(key)}" style="margin:0;">
       <input type="hidden" name="action" value="reset_all"/>
-      <button type="submit" onclick="return confirm('Wirklich ALLE Actions auf 0 setzen???');">
-        Reset Action Counter
+      <button type="submit" onclick="return confirm('Wirklich ALLE Counter (ICS/PDF) auf 0 setzen?');">
+        ICS/PDF Statistik zurücksetzen
       </button>
     </form>
 
     <form method="post" action="/stats?key=${esc(key)}" style="margin:0;">
       <input type="hidden" name="action" value="reset_kv"/>
-      <button type="submit" onclick="return confirm('Global Counter auf 0 setzen???');">
-        Reset Global Counter
+      <button type="submit" onclick="return confirm('Wirklich den Global Counter (KV) auf 0 setzen?');">
+        Global Counter (KV) zurücksetzen
       </button>
     </form>
 
     <form method="post" action="/stats?key=${esc(key)}" style="margin:0;">
       <input type="hidden" name="action" value="reset_all_and_kv"/>
-      <button type="submit" onclick="return confirm('Wirklich ALLES resetten???');">
-        Reset All
+      <button type="submit" onclick="return confirm('Wirklich ALLES zurücksetzen (ICS/PDF + Global KV)?');">
+        Alles zurücksetzen
       </button>
     </form>
   </div>
@@ -180,7 +180,7 @@ export async function onRequestGet({ request, env }) {
       </tr>
     </thead>
     <tbody>
-      ${body || '<tr><td colspan="6">Noch keine Daten!</td></tr>'}
+      ${body || '<tr><td colspan="6">Noch keine Daten.</td></tr>'}
     </tbody>
   </table>
 
