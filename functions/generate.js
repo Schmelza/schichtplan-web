@@ -25,11 +25,16 @@ export async function onRequestGet({ request, env }) {
   const origin = url.origin;
   const httpsUrl = origin + icsPath;
 
-  // iOS Abo: webcal:// (funktioniert mit GET URL)
+  // iOS Abo: webcal:// (funktioniert mit GET URL, iOS öffnet Kalender-App direkt)
   const webcalUrl = httpsUrl.replace(/^https:\/\//, "webcal://");
 
-  // Android RAW: einfach https (Download/Import)
+  // Android RAW: einfach https (Download/Import als Fallback)
   const rawUrl = httpsUrl;
+
+  // Android Abo: Google Calendar "render?cid=" Trick.
+  // webcal:// wird als Parameterwert übergeben (deshalb encodeURIComponent, sonst
+  // brechen die enthaltenen "&" aus fiber/team/year die render-URL auf).
+  const googleAboUrl = "https://calendar.google.com/calendar/render?cid=" + encodeURIComponent(webcalUrl);
 
   
   // ---- Stats (D1) ----
@@ -45,6 +50,7 @@ return new Response(JSON.stringify({
     ok: true,
     ics_url: icsPath,
     raw_url: rawUrl,
-    webcal_url: webcalUrl
+    webcal_url: webcalUrl,
+    google_abo_url: googleAboUrl
   }), { headers: { "content-type":"application/json; charset=utf-8" }});
 }
