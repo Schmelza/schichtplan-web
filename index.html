@@ -348,14 +348,14 @@
         <div class="small" id="urlIos"></div>
       </div>
       <div class="qrbox">
-        <h3>Android (RAW Download/Import)</h3>
-        <img id="qrAndroid" alt="QR Android" />
-        <div class="small" id="urlAndroid"></div>
-      </div>
-      <div class="qrbox">
-        <h3>Android (Abo / webcal über Google Kalender)</h3>
+        <h3>Android (Abo / webcal)</h3>
         <img id="qrAndroidAbo" alt="QR Android Abo" />
         <div class="small" id="urlAndroidAbo"></div>
+      </div>
+      <div class="qrbox">
+        <h3>iOS / Android (RAW Download / Import)</h3>
+        <img id="qrAndroid" alt="QR RAW" />
+        <div class="small" id="urlAndroid"></div>
       </div>
     </div>
   </div>
@@ -377,28 +377,17 @@
 
     <div class="hint" style="font-size:10px;line-height:1.2;">
       <p><strong>Wie nutze ich den Schichtkalender?</strong><br>
-      Abteilung wählen, Team auswählen, Jahr festlegen und anschließend auf „Generieren“ klicken.</p>
+      Abteilung, Team und Jahr wählen, dann auf „Generieren“ klicken.</p>
 
-      <p><strong>Welche Downloads gibt es?</strong><br>
-      ICS ist die Kalenderdatei, RAW ist der direkte Download und Webcal ist ein Kalender-Abo.</p>
+      <p><strong>Abo oder Download – was ist der Unterschied?</strong><br>
+      "Abo" trägt sich einmal ein und aktualisiert sich danach von selbst (wie ein Zeitungsabo).
+      "RAW Download" ist ein einmaliger Import – Änderungen später müssen dann erneut heruntergeladen werden.</p>
 
-      <p><strong>Was ist eigentlich "Webcal" / ein Kalender-Abo?</strong><br>
-      Ganz einfach erklärt: Ein normaler Download (ICS/RAW) legt die Termine einmalig in deinem Kalender ab –
-      wie ein Foto, das sich nie wieder ändert. Ein "Webcal"-Abo dagegen ist wie eine Zeitung im Abo: Dein
-      Kalender schaut sich regelmäßig selbst die aktuelle Version an und holt sich automatisch Änderungen,
-      ohne dass du erneut etwas herunterladen oder importieren musst. Einmal abonniert, bleibt der Kalender
-      also von allein aktuell.</p>
-
-      <p><strong>iPhone / iOS</strong><br>
-      iOS kann ICS, RAW und Webcal nutzen. Außerdem können die QR-Codes direkt mit dem iPhone gescannt werden.</p>
+      <p><strong>iPhone</strong><br>
+      Den QR-Code "iOS (Abo / webcal)" scannen oder den Link "Abo iPhone" antippen.</p>
 
       <p><strong>Android</strong><br>
-      Android importiert ICS/RAW meistens problemlos direkt. Für ein echtes Abo (siehe oben) auf Android bitte
-      den QR-Code bzw. Link "Android (Abo / webcal über Google Kalender)" nutzen – der trägt den Kalender
-      genau wie bei iOS als Abo ein, statt ihn nur einmalig zu importieren.</p>
-
-      <p><strong>Für wen ist der Schichtkalender gedacht?</strong><br>
-      Der Generator ist speziell für die Huhtamaki Fiber Schichtplanung gedacht und funktioniert auf Smartphone, PC und Tablet.</p>
+      Den QR-Code "Android (Abo / webcal)" scannen oder den Link "Abo Android" antippen.</p>
 
       <p><strong>Kontakt</strong><br>
       Bei Fragen einfach direkt an Johannes Trippen wenden.</p>
@@ -662,22 +651,21 @@
         return a;
       };
 
-      linksEl.appendChild(mkA(icsUrl, 'ICS (iOS/Android)'));
-      linksEl.appendChild(mkA(rawUrl, 'RAW (ios/Android)'));
-      linksEl.appendChild(mkA(webcalUrl, 'Kalender Abo (iOS/Android)'));
-      linksEl.appendChild(mkA(googleAboUrl, 'Kalender Abo Android (webcal)'));
+      linksEl.appendChild(mkA(webcalUrl, 'Abo iPhone (webcal)'));
+      linksEl.appendChild(mkA(googleAboUrl, 'Abo Android (webcal)'));
+      linksEl.appendChild(mkA(rawUrl, 'RAW Download (iOS/Android)'));
 
       const qrBase = 'https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=';
       qrIosImg.src = qrBase + encodeURIComponent(webcalUrl);
       urlIosEl.textContent = webcalUrl;
 
-      qrAndImg.src = qrBase + encodeURIComponent(rawUrl);
-      urlAndEl.textContent = rawUrl;
-
       // Zusätzliches echtes webcal-Abo für Android über den Google-Calendar
       // "render?cid=" Umweg (webcal:// wird von Android sonst nicht erkannt).
       qrAndAboImg.src = qrBase + encodeURIComponent(googleAboUrl);
       urlAndAboEl.textContent = googleAboUrl;
+
+      qrAndImg.src = qrBase + encodeURIComponent(rawUrl);
+      urlAndEl.textContent = rawUrl;
 
       outEl.style.display = 'block';
 
