@@ -91,10 +91,10 @@
     .links a:hover{background:#e5e7eb}
     .qrgrid{margin-top:14px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
     @media (max-width:820px){.qrgrid{grid-template-columns:1fr}}
-    .qrbox{border:1px solid var(--border);border-radius:12px;padding:12px;background:#fff;}
-    .qrbox h3{margin:0 0 10px;font-size:15px;}
+    .qrbox{border:1px solid var(--border);border-radius:12px;padding:12px;background:#fff;display:flex;flex-direction:column;}
+    .qrbox h3{margin:0 0 10px;font-size:15px;min-height:2.6em;display:flex;align-items:center;justify-content:center;text-align:center;}
     .qrbox img{width:100%;max-width:220px;height:auto;display:block;margin:0 auto 10px;}
-    .small{font-size:12px;color:var(--muted);word-break:break-all;}
+    .small{display:none;}
 
 
     .printPreviewWrap{
@@ -382,11 +382,20 @@
       <p><strong>Welche Downloads gibt es?</strong><br>
       ICS ist die Kalenderdatei, RAW ist der direkte Download und Webcal ist ein Kalender-Abo.</p>
 
+      <p><strong>Was ist eigentlich "Webcal" / ein Kalender-Abo?</strong><br>
+      Ganz einfach erklärt: Ein normaler Download (ICS/RAW) legt die Termine einmalig in deinem Kalender ab –
+      wie ein Foto, das sich nie wieder ändert. Ein "Webcal"-Abo dagegen ist wie eine Zeitung im Abo: Dein
+      Kalender schaut sich regelmäßig selbst die aktuelle Version an und holt sich automatisch Änderungen,
+      ohne dass du erneut etwas herunterladen oder importieren musst. Einmal abonniert, bleibt der Kalender
+      also von allein aktuell.</p>
+
       <p><strong>iPhone / iOS</strong><br>
       iOS kann ICS, RAW und Webcal nutzen. Außerdem können die QR-Codes direkt mit dem iPhone gescannt werden.</p>
 
       <p><strong>Android</strong><br>
-      Android nutzt in der Regel den ICS- oder RAW-Download und importiert diesen in die Kalender-App.</p>
+      Android importiert ICS/RAW meistens problemlos direkt. Für ein echtes Abo (siehe oben) auf Android bitte
+      den QR-Code bzw. Link "Android (Abo / webcal über Google Kalender)" nutzen – der trägt den Kalender
+      genau wie bei iOS als Abo ein, statt ihn nur einmalig zu importieren.</p>
 
       <p><strong>Für wen ist der Schichtkalender gedacht?</strong><br>
       Der Generator ist speziell für die Huhtamaki Fiber Schichtplanung gedacht und funktioniert auf Smartphone, PC und Tablet.</p>
