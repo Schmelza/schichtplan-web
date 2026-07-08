@@ -38,6 +38,28 @@ export async function onRequestGet({ request, env }) {
   out += "PRODID:-//Schichtplan Export//DE\r\n";
   out += "CALSCALE:GREGORIAN\r\n";
 
+  // Zeitzonen-Definition für Europe/Berlin. Ohne diese würden Kalender-Apps
+  // (v.a. Google Calendar) die "floating" DTSTART/DTEND-Werte fälschlich als
+  // UTC statt als lokale Uhrzeit interpretieren - mit der Folge, dass alle
+  // Schichten je nach Jahreszeit um 1-2 Stunden verschoben angezeigt werden.
+  out += "BEGIN:VTIMEZONE\r\n";
+  out += "TZID:Europe/Berlin\r\n";
+  out += "BEGIN:DAYLIGHT\r\n";
+  out += "TZOFFSETFROM:+0100\r\n";
+  out += "TZOFFSETTO:+0200\r\n";
+  out += "TZNAME:CEST\r\n";
+  out += "DTSTART:19700329T020000\r\n";
+  out += "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU\r\n";
+  out += "END:DAYLIGHT\r\n";
+  out += "BEGIN:STANDARD\r\n";
+  out += "TZOFFSETFROM:+0200\r\n";
+  out += "TZOFFSETTO:+0100\r\n";
+  out += "TZNAME:CET\r\n";
+  out += "DTSTART:19701025T030000\r\n";
+  out += "RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU\r\n";
+  out += "END:STANDARD\r\n";
+  out += "END:VTIMEZONE\r\n";
+
   let r = 0;
   for (let d = new Date(start.getTime()); d <= end; d = new Date(d.getTime() + 86400000)) {
     const shift = shiftForDate(fiber, team, d);
@@ -63,8 +85,8 @@ export async function onRequestGet({ request, env }) {
     out += "BEGIN:VEVENT\r\n";
     out += `UID:${uid(fiber, team, d)}\r\n`;
     out += `DTSTAMP:${fmtDT(new Date())}Z\r\n`;
-    out += `DTSTART:${fmtDT(dtStart)}\r\n`;
-    out += `DTEND:${fmtDT(dtEnd)}\r\n`;
+    out += `DTSTART;TZID=Europe/Berlin:${fmtDT(dtStart)}\r\n`;
+    out += `DTEND;TZID=Europe/Berlin:${fmtDT(dtEnd)}\r\n`;
     out += `SUMMARY:${summary}\r\n`;
     out += "END:VEVENT\r\n";
     r++;
