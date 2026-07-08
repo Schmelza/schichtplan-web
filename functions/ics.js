@@ -63,8 +63,8 @@ export async function onRequestGet({ request, env }) {
     out += "BEGIN:VEVENT\r\n";
     out += `UID:${uid(fiber, team, d)}\r\n`;
     out += `DTSTAMP:${fmtDT(new Date())}Z\r\n`;
-    out += `DTSTART:${fmtDT(dtStart)}\r\n`;
-    out += `DTEND:${fmtDT(dtEnd)}\r\n`;
+    out += `DTSTART;TZID=Europe/Berlin:${fmtDT(dtStart)}\r\n`;
+    out += `DTEND;TZID=Europe/Berlin:${fmtDT(dtEnd)}\r\n`;
     out += `SUMMARY:${summary}\r\n`;
     out += "END:VEVENT\r\n";
     r++;
