@@ -1,9 +1,15 @@
 import { clampAllowedYear, parseIntParam, shiftForDate } from "./_common.js";
 
 function pad(n){ return String(n).padStart(2,'0'); }
-function fmtDT(dt){ // UTC local date-time (floating) like VBA: yyyymmddTHHmmss
-  return `${dt.getUTCFullYear()}${pad(dt.getUTCMonth()+1)}${pad(dt.getUTCDate())}T${pad(dt.getUTCHours())}${pad(dt.getUTCMinutes())}${pad(dt.getUTCSeconds())}`;
+
+function fmtUTC(dt){
+  return `${dt.getUTCFullYear()}${pad(dt.getUTCMonth()+1)}${pad(dt.getUTCDate())}T${pad(dt.getUTCHours())}${pad(dt.getUTCMinutes())}${pad(dt.getUTCSeconds())}Z`;
 }
+
+function fmtBerlinLocal(y, m, d, h, min = 0, sec = 0) {
+  return `${y}${pad(m)}${pad(d)}T${pad(h)}${pad(min)}${pad(sec)}`;
+}
+
 function uid(fiber, team, dateObj){
   // Deterministisch statt zufällig: dieselbe Schicht bekommt bei jeder
   // Neu-Generierung dieselbe UID. Das ist entscheidend für Kalender-Abos
@@ -37,34 +43,70 @@ export async function onRequestGet({ request, env }) {
   out += "VERSION:2.0\r\n";
   out += "PRODID:-//Schichtplan Export//DE\r\n";
   out += "CALSCALE:GREGORIAN\r\n";
+  out += "X-WR-TIMEZONE:Europe/Berlin\r\n";
+
+  out += "BEGIN:VTIMEZONE\r\n";
+  out += "TZID:Europe/Berlin\r\n";
+  out += "BEGIN:DAYLIGHT\r\n";
+  out += "TZOFFSETFROM:+0100\r\n";
+  out += "TZOFFSETTO:+0200\r\n";
+  out += "TZNAME:CEST\r\n";
+  out += "DTSTART:19700329T020000\r\n";
+  out += "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU\r\n";
+  out += "END:DAYLIGHT\r\n";
+  out += "BEGIN:STANDARD\r\n";
+  out += "TZOFFSETFROM:+0200\r\n";
+  out += "TZOFFSETTO:+0100\r\n";
+  out += "TZNAME:CET\r\n";
+  out += "DTSTART:19701025T030000\r\n";
+  out += "RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU\r\n";
+  out += "END:STANDARD\r\n";
+  out += "END:VTIMEZONE\r\n";
 
   let r = 0;
   for (let d = new Date(start.getTime()); d <= end; d = new Date(d.getTime() + 86400000)) {
     const shift = shiftForDate(fiber, team, d);
     if (!shift || String(shift).toLowerCase() === "frei") continue;
 
+    const y = d.getUTCFullYear();
+    const m = d.getUTCMonth() + 1;
+    const day = d.getUTCDate();
+
     let dtStart, dtEnd, summary;
+
     if (String(shift).toLowerCase() === "früh") {
-      dtStart = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 6, 0, 0));
-      dtEnd   = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 14, 0, 0));
+      dtStart = fmtBerlinLocal(y, m, day, 6, 0, 0);
+      dtEnd   = fmtBerlinLocal(y, m, day, 14, 0, 0);
       summary = `Frühschicht P${team}`;
+
     } else if (String(shift).toLowerCase() === "spät") {
-      dtStart = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 14, 0, 0));
-      dtEnd   = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 22, 0, 0));
+      dtStart = fmtBerlinLocal(y, m, day, 14, 0, 0);
+      dtEnd   = fmtBerlinLocal(y, m, day, 22, 0, 0);
       summary = `Spätschicht P${team}`;
+
     } else if (String(shift).toLowerCase() === "nacht") {
-      dtStart = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 22, 0, 0));
-      dtEnd   = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()+1, 6, 0, 0));
+      const nextDay = new Date(Date.UTC(y, d.getUTCMonth(), day + 1));
+
+      dtStart = fmtBerlinLocal(y, m, day, 22, 0, 0);
+      dtEnd   = fmtBerlinLocal(
+        nextDay.getUTCFullYear(),
+        nextDay.getUTCMonth() + 1,
+        nextDay.getUTCDate(),
+        6,
+        0,
+        0
+      );
       summary = `Nachtschicht P${team}`;
+
     } else {
       continue;
     }
 
     out += "BEGIN:VEVENT\r\n";
     out += `UID:${uid(fiber, team, d)}\r\n`;
-    out += `DTSTAMP:${fmtDT(new Date())}Z\r\n`;
-    out += `DTSTART;TZID=Europe/Berlin:${fmtDT(dtStart)}\r\n`;
-    out += `DTEND;TZID=Europe/Berlin:${fmtDT(dtEnd)}\r\n`;
+    out += `DTSTAMP:${fmtUTC(new Date())}\r\n`;
+    out += `DTSTART;TZID=Europe/Berlin:${dtStart}\r\n`;
+    out += `DTEND;TZID=Europe/Berlin:${dtEnd}\r\n`;
     out += `SUMMARY:${summary}\r\n`;
     out += "END:VEVENT\r\n";
     r++;
