@@ -1,9 +1,43 @@
 import { clampAllowedYear, parseIntParam, shiftForDate } from "./_common.js";
 
 function pad(n){ return String(n).padStart(2,'0'); }
-function fmtDT(dt){ // UTC local date-time (floating) like VBA: yyyymmddTHHmmss
-  return `${dt.getUTCFullYear()}${pad(dt.getUTCMonth()+1)}${pad(dt.getUTCDate())}T${pad(dt.getUTCHours())}${pad(dt.getUTCMinutes())}${pad(dt.getUTCSeconds())}`;
+
+function fmtUTC(dt){
+  return `${dt.getUTCFullYear()}${pad(dt.getUTCMonth()+1)}${pad(dt.getUTCDate())}T${pad(dt.getUTCHours())}${pad(dt.getUTCMinutes())}${pad(dt.getUTCSeconds())}Z`;
 }
+
+function lastSundayDay(year, monthIndex) {
+  const d = new Date(Date.UTC(year, monthIndex + 1, 0));
+  return d.getUTCDate() - d.getUTCDay();
+}
+
+function berlinOffsetMinutes(y, m, d, h) {
+  const marchLastSunday = lastSundayDay(y, 2);
+  const octoberLastSunday = lastSundayDay(y, 9);
+
+  if (m > 3 && m < 10) return 120;
+  if (m < 3 || m > 10) return 60;
+
+  if (m === 3) {
+    if (d > marchLastSunday) return 120;
+    if (d < marchLastSunday) return 60;
+    return h >= 3 ? 120 : 60;
+  }
+
+  if (m === 10) {
+    if (d < octoberLastSunday) return 120;
+    if (d > octoberLastSunday) return 60;
+    return h >= 3 ? 60 : 120;
+  }
+
+  return 60;
+}
+
+function berlinLocalToUTC(y, m, d, h, min = 0, sec = 0) {
+  const offset = berlinOffsetMinutes(y, m, d, h);
+  return new Date(Date.UTC(y, m - 1, d, h, min, sec) - offset * 60000);
+}
+
 function uid(fiber, team, dateObj){
   // Deterministisch statt zufällig: dieselbe Schicht bekommt bei jeder
   // Neu-Generierung dieselbe UID. Das ist entscheidend für Kalender-Abos
@@ -39,32 +73,51 @@ export async function onRequestGet({ request, env }) {
   out += "CALSCALE:GREGORIAN\r\n";
 
   let r = 0;
+
   for (let d = new Date(start.getTime()); d <= end; d = new Date(d.getTime() + 86400000)) {
     const shift = shiftForDate(fiber, team, d);
     if (!shift || String(shift).toLowerCase() === "frei") continue;
 
+    const y = d.getUTCFullYear();
+    const m = d.getUTCMonth() + 1;
+    const day = d.getUTCDate();
+
     let dtStart, dtEnd, summary;
+
     if (String(shift).toLowerCase() === "früh") {
-      dtStart = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 6, 0, 0));
-      dtEnd   = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 14, 0, 0));
+      dtStart = berlinLocalToUTC(y, m, day, 6, 0, 0);
+      dtEnd   = berlinLocalToUTC(y, m, day, 14, 0, 0);
       summary = `Frühschicht P${team}`;
+
     } else if (String(shift).toLowerCase() === "spät") {
-      dtStart = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 14, 0, 0));
-      dtEnd   = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 22, 0, 0));
+      dtStart = berlinLocalToUTC(y, m, day, 14, 0, 0);
+      dtEnd   = berlinLocalToUTC(y, m, day, 22, 0, 0);
       summary = `Spätschicht P${team}`;
+
     } else if (String(shift).toLowerCase() === "nacht") {
-      dtStart = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 22, 0, 0));
-      dtEnd   = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()+1, 6, 0, 0));
+      const nextDay = new Date(Date.UTC(y, d.getUTCMonth(), day + 1));
+
+      dtStart = berlinLocalToUTC(y, m, day, 22, 0, 0);
+      dtEnd   = berlinLocalToUTC(
+        nextDay.getUTCFullYear(),
+        nextDay.getUTCMonth() + 1,
+        nextDay.getUTCDate(),
+        6,
+        0,
+        0
+      );
+
       summary = `Nachtschicht P${team}`;
+
     } else {
       continue;
     }
 
     out += "BEGIN:VEVENT\r\n";
     out += `UID:${uid(fiber, team, d)}\r\n`;
-    out += `DTSTAMP:${fmtDT(new Date())}Z\r\n`;
-    out += `DTSTART:${fmtDT(dtStart)}\r\n`;
-    out += `DTEND:${fmtDT(dtEnd)}\r\n`;
+    out += `DTSTAMP:${fmtUTC(new Date())}\r\n`;
+    out += `DTSTART:${fmtUTC(dtStart)}\r\n`;
+    out += `DTEND:${fmtUTC(dtEnd)}\r\n`;
     out += `SUMMARY:${summary}\r\n`;
     out += "END:VEVENT\r\n";
     r++;
