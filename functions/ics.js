@@ -6,15 +6,39 @@ function fmtUTC(dt){
   return `${dt.getUTCFullYear()}${pad(dt.getUTCMonth()+1)}${pad(dt.getUTCDate())}T${pad(dt.getUTCHours())}${pad(dt.getUTCMinutes())}${pad(dt.getUTCSeconds())}Z`;
 }
 
-function fmtBerlinLocal(y, m, d, h, min = 0, sec = 0) {
-  return `${y}${pad(m)}${pad(d)}T${pad(h)}${pad(min)}${pad(sec)}`;
+function lastSundayDay(year, monthIndex) {
+  const d = new Date(Date.UTC(year, monthIndex + 1, 0));
+  return d.getUTCDate() - d.getUTCDay();
+}
+
+function berlinOffsetMinutes(y, m, d, h) {
+  const marchLastSunday = lastSundayDay(y, 2);
+  const octoberLastSunday = lastSundayDay(y, 9);
+
+  if (m > 3 && m < 10) return 120;
+  if (m < 3 || m > 10) return 60;
+
+  if (m === 3) {
+    if (d > marchLastSunday) return 120;
+    if (d < marchLastSunday) return 60;
+    return h >= 2 ? 120 : 60;
+  }
+
+  if (m === 10) {
+    if (d < octoberLastSunday) return 120;
+    if (d > octoberLastSunday) return 60;
+    return h >= 3 ? 60 : 120;
+  }
+
+  return 60;
+}
+
+function berlinLocalToUTC(y, m, d, h, min = 0, sec = 0) {
+  const offset = berlinOffsetMinutes(y, m, d, h);
+  return new Date(Date.UTC(y, m - 1, d, h, min, sec) - offset * 60000);
 }
 
 function uid(fiber, team, dateObj){
-  // Deterministisch statt zufällig: dieselbe Schicht bekommt bei jeder
-  // Neu-Generierung dieselbe UID. Das ist entscheidend für Kalender-Abos
-  // (webcal) - sonst erkennt der Kalender bei jedem automatischen Refresh
-  // "neue" Events statt eines Updates und legt Dubletten an.
   const y = dateObj.getUTCFullYear();
   const m = pad(dateObj.getUTCMonth()+1);
   const d = pad(dateObj.getUTCDate());
@@ -45,25 +69,6 @@ export async function onRequestGet({ request, env }) {
   out += "CALSCALE:GREGORIAN\r\n";
   out += "X-WR-TIMEZONE:Europe/Berlin\r\n";
 
-  out += "BEGIN:VTIMEZONE\r\n";
-  out += "TZID:Europe/Berlin\r\n";
-  out += "BEGIN:DAYLIGHT\r\n";
-  out += "TZOFFSETFROM:+0100\r\n";
-  out += "TZOFFSETTO:+0200\r\n";
-  out += "TZNAME:CEST\r\n";
-  out += "DTSTART:19700329T020000\r\n";
-  out += "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU\r\n";
-  out += "END:DAYLIGHT\r\n";
-  out += "BEGIN:STANDARD\r\n";
-  out += "TZOFFSETFROM:+0200\r\n";
-  out += "TZOFFSETTO:+0100\r\n";
-  out += "TZNAME:CET\r\n";
-  out += "DTSTART:19701025T030000\r\n";
-  out += "RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU\r\n";
-  out += "END:STANDARD\r\n";
-  out += "END:VTIMEZONE\r\n";
-
-  let r = 0;
   for (let d = new Date(start.getTime()); d <= end; d = new Date(d.getTime() + 86400000)) {
     const shift = shiftForDate(fiber, team, d);
     if (!shift || String(shift).toLowerCase() === "frei") continue;
@@ -75,20 +80,20 @@ export async function onRequestGet({ request, env }) {
     let dtStart, dtEnd, summary;
 
     if (String(shift).toLowerCase() === "früh") {
-      dtStart = fmtBerlinLocal(y, m, day, 6, 0, 0);
-      dtEnd   = fmtBerlinLocal(y, m, day, 14, 0, 0);
+      dtStart = berlinLocalToUTC(y, m, day, 6, 0, 0);
+      dtEnd   = berlinLocalToUTC(y, m, day, 14, 0, 0);
       summary = `Frühschicht P${team}`;
 
     } else if (String(shift).toLowerCase() === "spät") {
-      dtStart = fmtBerlinLocal(y, m, day, 14, 0, 0);
-      dtEnd   = fmtBerlinLocal(y, m, day, 22, 0, 0);
+      dtStart = berlinLocalToUTC(y, m, day, 14, 0, 0);
+      dtEnd   = berlinLocalToUTC(y, m, day, 22, 0, 0);
       summary = `Spätschicht P${team}`;
 
     } else if (String(shift).toLowerCase() === "nacht") {
       const nextDay = new Date(Date.UTC(y, d.getUTCMonth(), day + 1));
 
-      dtStart = fmtBerlinLocal(y, m, day, 22, 0, 0);
-      dtEnd   = fmtBerlinLocal(
+      dtStart = berlinLocalToUTC(y, m, day, 22, 0, 0);
+      dtEnd   = berlinLocalToUTC(
         nextDay.getUTCFullYear(),
         nextDay.getUTCMonth() + 1,
         nextDay.getUTCDate(),
@@ -96,6 +101,7 @@ export async function onRequestGet({ request, env }) {
         0,
         0
       );
+
       summary = `Nachtschicht P${team}`;
 
     } else {
@@ -105,11 +111,10 @@ export async function onRequestGet({ request, env }) {
     out += "BEGIN:VEVENT\r\n";
     out += `UID:${uid(fiber, team, d)}\r\n`;
     out += `DTSTAMP:${fmtUTC(new Date())}\r\n`;
-    out += `DTSTART;TZID=Europe/Berlin:${dtStart}\r\n`;
-    out += `DTEND;TZID=Europe/Berlin:${dtEnd}\r\n`;
+    out += `DTSTART:${fmtUTC(dtStart)}\r\n`;
+    out += `DTEND:${fmtUTC(dtEnd)}\r\n`;
     out += `SUMMARY:${summary}\r\n`;
     out += "END:VEVENT\r\n";
-    r++;
   }
 
   out += "END:VCALENDAR\r\n";
@@ -119,7 +124,9 @@ export async function onRequestGet({ request, env }) {
   return new Response(out, {
     headers: {
       "content-type":"text/calendar; charset=utf-8",
-      "content-disposition": `attachment; filename="${filename}"`
+      "content-disposition": `attachment; filename="${filename}"`,
+      "cache-control":"no-store, no-cache, must-revalidate, max-age=0",
+      "pragma":"no-cache"
     }
   });
 }
