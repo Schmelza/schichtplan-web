@@ -107,9 +107,9 @@ export async function onRequestGet({ request, env }) {
   }
 
   const body = rows.map(r => {
-    const lastIcs  = r.last_ics_ts  ? new Date(r.last_ics_ts).toLocaleString("de-DE") : "-";
-    const lastP1   = r.last_pdfv1_ts ? new Date(r.last_pdfv1_ts).toLocaleString("de-DE") : "-";
-    const lastP2   = r.last_pdfv2_ts ? new Date(r.last_pdfv2_ts).toLocaleString("de-DE") : "-";
+    const lastIcs  = r.last_ics_ts  ? new Date(r.last_ics_ts).toLocaleString("de-DE", { timeZone: "Europe/Berlin" }) : "-";
+    const lastP1   = r.last_pdfv1_ts ? new Date(r.last_pdfv1_ts).toLocaleString("de-DE", { timeZone: "Europe/Berlin" }) : "-";
+    const lastP2   = r.last_pdfv2_ts ? new Date(r.last_pdfv2_ts).toLocaleString("de-DE", { timeZone: "Europe/Berlin" }) : "-";
     return `<tr>
       <td>${esc(r.fiber)}</td>
       <td>P${esc(r.team)}</td>
