@@ -22,10 +22,18 @@ function parseIntParam(url, key) {
   return Math.trunc(n);
 }
 
+// Liefert das aktuelle Jahr in Europe/Berlin, nicht in der Server-Zeitzone
+// (Cloudflare Workers laufen intern in UTC). Relevant nur für ein ca.
+// 1-2-stündiges Fenster in der Silvesternacht, in dem UTC und Berliner Zeit
+// im unterschiedlichen Kalenderjahr stehen.
+function currentBerlinYear(){
+  return Number(new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin', year: 'numeric' }).format(new Date()));
+}
+
 function clampAllowedYear(year) {
-  const now = new Date();
-  const maxYear = now.getFullYear() + 5;
-  const minYear = Math.max(MIN_YEAR, now.getFullYear());
+  const nowYear = currentBerlinYear();
+  const maxYear = nowYear + 5;
+  const minYear = Math.max(MIN_YEAR, nowYear);
   if (year < minYear || year > maxYear) return { ok:false, minYear, maxYear };
   return { ok:true, minYear, maxYear };
 }
@@ -255,7 +263,7 @@ async function statsInc(db, { fiber, team, year, kind }){
 }
 
 export {
-  MIN_YEAR, TEL, parseIntParam, clampAllowedYear, shiftForDate,
+  MIN_YEAR, TEL, parseIntParam, clampAllowedYear, currentBerlinYear, shiftForDate,
   isHolidayRLP, getFerienSetForYear, isFerien, teamLabel, safeHtml,
   ensureStatsSchema, statsInc
 };

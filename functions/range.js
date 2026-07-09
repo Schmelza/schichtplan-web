@@ -1,9 +1,9 @@
-import { MIN_YEAR, clampAllowedYear } from "./_common.js";
+import { MIN_YEAR, currentBerlinYear } from "./_common.js";
 
 export async function onRequestGet(context) {
-  const now = new Date();
-  const maxYear = now.getFullYear() + 5;
-  const minYear = Math.max(MIN_YEAR, now.getFullYear());
+  const nowYear = currentBerlinYear();
+  const maxYear = nowYear + 5;
+  const minYear = Math.max(MIN_YEAR, nowYear);
 
   return new Response(JSON.stringify({ minYear, maxYear }), {
     headers: {
