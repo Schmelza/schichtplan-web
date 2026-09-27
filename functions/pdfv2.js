@@ -1,5 +1,5 @@
 
-import { clampAllowedYear, parseIntParam, shiftForDate, isHolidayRLP, getFerienSetForYear, isFerien, TEL, statsInc } from "./_common.js";
+import { clampAllowedYear, parseIntParam, shiftForDate, getFerienSetForYear, isFerien, getFeiertageSetForYear, isHoliday, TEL, statsInc } from "./_common.js";
 
 const SHIFT_COLORS = { "F": "#ffff00", "S": "#ff0000", "N": "#00b0f0" };
 const HOLIDAY_BG = "#ffc8c8";
@@ -174,6 +174,7 @@ export async function onRequestGet({ request, env }) {
   if (!yr.ok) return new Response(`year muss ${yr.minYear} bis ${yr.maxYear} sein`, { status: 400 });
 
   const ferienSet = await getFerienSetForYear(year);
+  const feiertagSet = await getFeiertageSetForYear(year);
 
   const tel = (fiber === 1 ? TEL.fiber1 : TEL.fiber2);
   const title = `Schichtplan ${year}  Fiber ${fiber} - P${team}`;
@@ -280,7 +281,7 @@ restore();
           if (dayNum > lastDay) continue;
 
           const d = new Date(Date.UTC(year, m, dayNum));
-          const holiday = isHolidayRLP(d);
+          const holiday = isHoliday(feiertagSet, d);
           const vacation = !holiday && isFerien(ferienSet, d);
           const dayName = DAYS_DE[d.getUTCDay()];
 

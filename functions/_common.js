@@ -22,10 +22,18 @@ function parseIntParam(url, key) {
   return Math.trunc(n);
 }
 
+// Liefert das aktuelle Jahr in Europe/Berlin, nicht in der Server-Zeitzone
+// (Cloudflare Workers laufen intern in UTC). Relevant nur für ein ca.
+// 1-2-stündiges Fenster in der Silvesternacht, in dem UTC und Berliner Zeit
+// im unterschiedlichen Kalenderjahr stehen.
+function currentBerlinYear(){
+  return Number(new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin', year: 'numeric' }).format(new Date()));
+}
+
 function clampAllowedYear(year) {
-  const now = new Date();
-  const maxYear = now.getFullYear() + 5;
-  const minYear = Math.max(MIN_YEAR, now.getFullYear());
+  const nowYear = currentBerlinYear();
+  const maxYear = nowYear + 5;
+  const minYear = Math.max(MIN_YEAR, nowYear);
   if (year < minYear || year > maxYear) return { ok:false, minYear, maxYear };
   return { ok:true, minYear, maxYear };
 }
@@ -173,6 +181,59 @@ function isFerien(setForYear, dateObj) {
   return setForYear.has(key);
 }
 
+// Feiertage RLP: primär per API (feiertage-api.de, kostenlos, kein Key nötig),
+// mit Fallback auf die hartcodierte Berechnung (isHolidayRLP), falls die API
+// mal nicht erreichbar ist. So bleibt der Kalender auch bei einem Ausfall der
+// externen Quelle funktionsfähig, ist aber im Normalfall automatisch aktuell
+// (z.B. falls sich mal Feiertagsregeln in RLP ändern sollten).
+const FEIERTAGE_API_URL = "https://feiertage-api.de/api/?jahr=";
+let feiertageCache = { fetchedAt: new Map(), daysByYear: new Map() };
+
+async function getFeiertageSetForYear(year) {
+  const now = Date.now();
+  const lastFetch = feiertageCache.fetchedAt.get(year) || 0;
+  const needsFetch = (now - lastFetch) > 24*60*60*1000;
+
+  if (needsFetch) {
+    try {
+      const res = await fetch(FEIERTAGE_API_URL + year, { headers: { "User-Agent": "schichtplan-web" }});
+      if (res.ok) {
+        const data = await res.json();
+        const rp = data && data.RP;
+        if (rp && typeof rp === "object") {
+          const set = new Set(Object.values(rp).map(entry => entry.datum));
+          feiertageCache.daysByYear.set(year, set);
+          feiertageCache.fetchedAt.set(year, now);
+        }
+      }
+    } catch(_e) {
+      // Netzwerkfehler: vorhandenen Cache (falls da) einfach weiterverwenden
+    }
+  }
+
+  const cached = feiertageCache.daysByYear.get(year);
+  if (cached) return cached;
+
+  // Fallback: API war noch nie erreichbar für dieses Jahr -> auf die
+  // deterministische, hartcodierte RLP-Berechnung zurückfallen.
+  const fallbackSet = new Set();
+  for (let m = 1; m <= 12; m++) {
+    const daysInMonth = new Date(Date.UTC(year, m, 0)).getUTCDate();
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dt = new Date(Date.UTC(year, m - 1, d));
+      if (isHolidayRLP(dt)) {
+        fallbackSet.add(`${year}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`);
+      }
+    }
+  }
+  return fallbackSet;
+}
+
+function isHoliday(setForYear, dateObj) {
+  const key = `${dateObj.getUTCFullYear()}-${String(dateObj.getUTCMonth()+1).padStart(2,'0')}-${String(dateObj.getUTCDate()).padStart(2,'0')}`;
+  return setForYear.has(key);
+}
+
 function teamLabel(team) {
   const n = Number(team);
   const romans = ["","P I","P II","P III","P IV"];
@@ -256,7 +317,7 @@ async function statsInc(db, { fiber, team, year, kind }){
 }
 
 export {
-  MIN_YEAR, TEL, parseIntParam, clampAllowedYear, shiftForDate,
-  isHolidayRLP, getFerienSetForYear, isFerien, teamLabel, safeHtml,
+  MIN_YEAR, TEL, parseIntParam, clampAllowedYear, currentBerlinYear, shiftForDate,
+  isHolidayRLP, getFerienSetForYear, isFerien, getFeiertageSetForYear, isHoliday, teamLabel, safeHtml,
   ensureStatsSchema, statsInc
 };

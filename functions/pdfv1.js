@@ -1,5 +1,5 @@
 
-import { clampAllowedYear, parseIntParam, shiftForDate, isHolidayRLP, getFerienSetForYear, isFerien, TEL, statsInc } from "./_common.js";
+import { clampAllowedYear, parseIntParam, shiftForDate, getFerienSetForYear, isFerien, getFeiertageSetForYear, isHoliday, TEL, statsInc } from "./_common.js";
 
 const SHIFT_COLORS = { "F": "#ffff00", "S": "#ff0000", "N": "#00b0f0" };
 const HOLIDAY_BG = "#ffc8c8";
@@ -169,6 +169,7 @@ if (!fiber || !team || !year) return new Response("Missing params: fiber, team, 
   if (!yr.ok) return new Response(`year muss ${yr.minYear} bis ${yr.maxYear} sein`, { status: 400 });
 
   const ferienSet = await getFerienSetForYear(year);
+  const feiertagSet = await getFeiertageSetForYear(year);
 
   const tel = (fiber === 1 ? TEL.fiber1 : TEL.fiber2);
   // Use plain hyphens in the title to avoid unsupported glyphs (e.g. en-dash) showing as "?" in some PDF viewers.
@@ -287,7 +288,7 @@ centerInBox(telLines[2], 4);
 
             const dateObj = new Date(Date.UTC(year, m, d));
             const wd = WD2[dateObj.getUTCDay()];
-            const holiday = isHolidayRLP(dateObj);
+            const holiday = isHoliday(feiertagSet, dateObj);
             const vacation = !holiday && isFerien(ferienSet, dateObj);
 
             if (r === 1) {
