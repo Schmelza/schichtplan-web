@@ -2,7 +2,7 @@ import { MIN_YEAR, currentBerlinYear } from "./_common.js";
 
 export async function onRequestGet(context) {
   const nowYear = currentBerlinYear();
-  const maxYear = nowYear + 5;
+  const maxYear = nowYear + 3; // laufendes Jahr + 3 (so weit decken die Schulferien-Quellen ab)
   const minYear = Math.max(MIN_YEAR, nowYear);
 
   return new Response(JSON.stringify({ minYear, maxYear }), {

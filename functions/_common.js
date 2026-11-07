@@ -32,7 +32,7 @@ function currentBerlinYear(){
 
 function clampAllowedYear(year) {
   const nowYear = currentBerlinYear();
-  const maxYear = nowYear + 5;
+  const maxYear = nowYear + 3; // laufendes Jahr + 3 (so weit decken die Schulferien-Quellen ab)
   const minYear = Math.max(MIN_YEAR, nowYear);
   if (year < minYear || year > maxYear) return { ok:false, minYear, maxYear };
   return { ok:true, minYear, maxYear };
