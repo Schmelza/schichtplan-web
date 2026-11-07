@@ -1,4 +1,4 @@
-import { clampAllowedYear, parseIntParam, shiftForDate } from "./_common.js";
+import { MIN_YEAR, clampAllowedYear, parseIntParam, shiftForDate } from "./_common.js";
 
 function pad(n){ return String(n).padStart(2,'0'); }
 function fmtDT(dt){ // liest die UTC-Komponenten eines Date-Objekts (als reine Wanduhr-Zahlen genutzt)
@@ -55,8 +55,14 @@ export async function onRequestGet({ request, env }) {
     return new Response("Missing params: fiber, team, year", { status: 400 });
   }
 
+  // Kalender-Abos fuer vergangene Jahre muessen weiter erreichbar bleiben, sonst
+  // bekommen bestehende Abos nach dem Jahreswechsel einen Fehler. Deshalb gilt
+  // fuer die ICS-Datei nur die Obergrenze (laufendes Jahr + 3) und als
+  // Untergrenze der Programmstart (MIN_YEAR), nicht das laufende Jahr.
   const yr = clampAllowedYear(year);
-  if (!yr.ok) return new Response(`year muss ${yr.minYear} bis ${yr.maxYear} sein`, { status: 400 });
+  if (year < MIN_YEAR || year > yr.maxYear) {
+    return new Response(`year muss ${MIN_YEAR} bis ${yr.maxYear} sein`, { status: 400 });
+  }
 
   const start = new Date(Date.UTC(year,0,1));
   const end   = new Date(Date.UTC(year,11,31));
