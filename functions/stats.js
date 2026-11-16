@@ -106,17 +106,42 @@ export async function onRequestGet({ request, env }) {
     return new Response("DB error: " + (e?.message || String(e)), { status: 500 });
   }
 
-  const body = rows.map(r => {
+  // Letzte Aktion: neuester Zeitstempel ueber alle Zeilen und Spalten
+  // (Generieren, ICS, PDF v1, PDF v2). Wird in der Tabelle farbig markiert.
+  const TS_FIELDS = [
+    { key: "last_ts",       label: "Generieren" },
+    { key: "last_ics_ts",   label: "ICS" },
+    { key: "last_pdfv1_ts", label: "PDF v1" },
+    { key: "last_pdfv2_ts", label: "PDF v2" },
+  ];
+  let latest = null;
+  rows.forEach((r, i) => {
+    for (const f of TS_FIELDS) {
+      const ms = r[f.key] ? Date.parse(r[f.key]) : NaN;
+      if (Number.isFinite(ms) && (!latest || ms > latest.ms)) {
+        latest = { i, key: f.key, label: f.label, ms };
+      }
+    }
+  });
+  const fmtBerlin = (iso) => new Date(iso).toLocaleString("de-DE", { timeZone: "Europe/Berlin" });
+  const latestHtml = latest
+    ? `<div class="latest">Letzte Aktion: <b>${esc(rows[latest.i].fiber)} &middot; P${esc(rows[latest.i].team)} &middot; ${esc(rows[latest.i].year)}</b> &ndash; ${esc(latest.label)} &ndash; ${esc(fmtBerlin(rows[latest.i][latest.key]))}</div>`
+    : "";
+  const cellCls = (i, key) => (latest && latest.i === i && latest.key === key) ? ' class="latest-cell"' : "";
+
+  const body = rows.map((r, i) => {
     const lastIcs  = r.last_ics_ts  ? new Date(r.last_ics_ts).toLocaleString("de-DE", { timeZone: "Europe/Berlin" }) : "-";
     const lastP1   = r.last_pdfv1_ts ? new Date(r.last_pdfv1_ts).toLocaleString("de-DE", { timeZone: "Europe/Berlin" }) : "-";
     const lastP2   = r.last_pdfv2_ts ? new Date(r.last_pdfv2_ts).toLocaleString("de-DE", { timeZone: "Europe/Berlin" }) : "-";
-    return `<tr>
-      <td>${esc(r.fiber)}</td>
-      <td>P${esc(r.team)}</td>
-      <td>${esc(r.year)}</td>
-      <td><b>${esc(r.ics_count ?? 0)}</b><div class="sub">${esc(lastIcs)}</div></td>
-      <td><b>${esc(r.pdfv1_count ?? 0)}</b><div class="sub">${esc(lastP1)}</div></td>
-      <td><b>${esc(r.pdfv2_count ?? 0)}</b><div class="sub">${esc(lastP2)}</div></td>
+    const rowCls = (latest && latest.i === i) ? ' class="latest-row"' : "";
+    const genCls = cellCls(i, "last_ts"); // "Generieren" hat keine eigene Spalte -> Fiber/Team/Jahr markieren
+    return `<tr${rowCls}>
+      <td${genCls}>${esc(r.fiber)}</td>
+      <td${genCls}>P${esc(r.team)}</td>
+      <td${genCls}>${esc(r.year)}</td>
+      <td${cellCls(i, "last_ics_ts")}><b>${esc(r.ics_count ?? 0)}</b><div class="sub">${esc(lastIcs)}</div></td>
+      <td${cellCls(i, "last_pdfv1_ts")}><b>${esc(r.pdfv1_count ?? 0)}</b><div class="sub">${esc(lastP1)}</div></td>
+      <td${cellCls(i, "last_pdfv2_ts")}><b>${esc(r.pdfv2_count ?? 0)}</b><div class="sub">${esc(lastP2)}</div></td>
     </tr>`;
   }).join("");
 
@@ -135,6 +160,9 @@ export async function onRequestGet({ request, env }) {
   th{background:#f2f2f2}
   .sub{margin-top:4px;font-size:11px;color:#666;line-height:1.2}
   .small{font-size:12px;color:#555;margin-top:10px}
+  .latest{margin:0 0 14px;padding:8px 10px;background:#fff3b0;border:1px solid #e0b800;border-radius:8px;font-size:14px}
+  tr.latest-row td{background:#fff8d6}
+  td.latest-cell{background:#ffd54a !important;box-shadow:inset 0 0 0 2px #e0a800}
   button{padding:10px 12px;border:1px solid #222;background:#fff;border-radius:8px;font-size:14px; line-height:1.2; color:#111; -webkit-appearance:none; appearance:none; font-weight:600; cursor:pointer;}
   button:active{transform:translateY(1px)}
 </style>
@@ -142,6 +170,7 @@ export async function onRequestGet({ request, env }) {
 <body>
   <h1>User Statistik</h1>
   <div class="meta">Gesamt Zähler: <b>${esc(kvGlobal)}</b></div>
+  ${latestHtml}
   ${resetMsg ? '<div class="meta" style="color:#0a6;">ICS/PDF Statistik wurde zurückgesetzt.</div>' : ''}
   ${kvResetMsg ? '<div class="meta" style="color:#0a6;">Global Counter wurde zurückgesetzt.</div>' : ''}
 
