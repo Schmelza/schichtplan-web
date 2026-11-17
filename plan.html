@@ -28,6 +28,8 @@
     .btn:hover{background:#e5e7eb}
     .stage{flex:1;min-height:0}
     iframe{display:block;width:100%;height:100%;border:0;background:#fff}
+    .note{flex:1 0 100%;font-size:13px;line-height:1.4;color:#4b5563}
+    .note[hidden]{display:none}
     .msg{padding:28px 18px;text-align:center;line-height:1.5}
     .msg[hidden]{display:none}
 
@@ -47,7 +49,9 @@
     <div class="title" id="title">Schichtplan</div>
     <a class="btn" id="save" download>⬇ Speichern</a>
     <button class="btn" id="print" type="button">🖨 Drucken</button>
+    <button class="btn" id="share" type="button" hidden>⬆ Speichern / Drucken</button>
     <a class="btn" id="full">⤢ Vollbild</a>
+    <div class="note" id="note" hidden></div>
   </div>
 
   <div class="stage">
@@ -72,6 +76,8 @@
   var fullEl = document.getElementById('full');
   var frame = document.getElementById('frame');
   var backEl = document.getElementById('back');
+  var shareEl = document.getElementById('share');
+  var noteEl = document.getElementById('note');
 
   // Installierte App (kein Browser-Zurück-Knopf): eigenen Zurück-Knopf zeigen
   var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
@@ -118,8 +124,44 @@
   frame.hidden = false;
   frame.src = base + '&nostat=1#navpanes=0&view=Fit';
 
+  // iPhone/iPad: Speichern und Drucken laufen über das Teilen-Menü des Geräts.
+  // Es druckt das PDF selbst (Querformat, ohne Adresse in der Fußzeile), und man kommt
+  // jederzeit wieder heraus. Ein Download-Link würde dagegen in einem Bildschirm
+  // ohne Schließen-Knopf landen, der Seitendruck von iOS ignoriert das Querformat.
+  if (isIOS){
+    saveEl.hidden = true;
+    printEl.hidden = true;
+    var fname = 'Schichtplan-' + year + '-Fiber' + fiber + '-P' + team + '-' + (t === 'pdfv1' ? 'v1' : 'v2') + '.pdf';
+    var trackUrl = '/track?event=' + t + '&fiber=' + fiber + '&team=' + team + '&year=' + year;
+    var track = function(){
+      try {
+        if (navigator.sendBeacon) navigator.sendBeacon(trackUrl, new Blob([], { type: 'application/octet-stream' }));
+        else fetch(trackUrl, { method: 'POST', keepalive: true }).catch(function(){});
+      } catch (e) {}
+    };
+    var showNote = function(){
+      noteEl.textContent = 'Zum Speichern oder Drucken „Vollbild“ öffnen und dort unten auf Teilen tippen.';
+      noteEl.hidden = false;
+    };
+    try {
+    fetch(base + '&nostat=1')
+      .then(function(r){ if (!r.ok) throw new Error('pdf'); return r.blob(); })
+      .then(function(b){
+        var file = new File([b], fname, { type: 'application/pdf' });
+        if (!(navigator.canShare && navigator.canShare({ files: [file] }))) throw new Error('share');
+        shareEl.hidden = false;
+        shareEl.addEventListener('click', function(){
+          track(); // "Speichern" zählt als eigene Aktion
+          navigator.share({ files: [file], title: fname }).catch(function(e){
+            if (!e || e.name !== 'AbortError') location.href = fullEl.href; // Ersatz: PDF in der Ansicht öffnen
+          });
+        });
+      })
+      .catch(showNote);
+    } catch (e) { showNote(); }
+  }
+
   printEl.addEventListener('click', function(){
-    if (isIOS){ window.print(); return; }
     try {
       frame.contentWindow.focus();
       frame.contentWindow.print();
