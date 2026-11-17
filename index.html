@@ -597,17 +597,20 @@
     const isStandalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
                          (window.navigator && window.navigator.standalone === true);
 
-    let url = `/${which}?fiber=${encodeURIComponent(fiber)}&team=${encodeURIComponent(team)}&year=${encodeURIComponent(year)}`;
+    const qs = `fiber=${encodeURIComponent(fiber)}&team=${encodeURIComponent(team)}&year=${encodeURIComponent(year)}`;
 
-    // iOS Homescreen/Web-App: force real download so user can print from Dateien/Share.
+    // iPhone/iPad als Home-Bildschirm-App: Zwischenseite "Plan" mit Speichern-/Drucken-Knöpfen
+    // (dort gibt es sonst keine Möglichkeit dazu). Im selben Fenster, Zurück per Wischgeste/Knopf.
     if (isIOS && isStandalone){
-      url += '&dl=1';
-      location.href = url;
+      location.href = `/plan?t=${encodeURIComponent(which)}&${qs}`;
       return;
     }
 
-    // Everywhere else (incl. Windows/Android PWA): open in a new window/tab so the app stays open.
-    window.open(url, '_blank', 'noopener');
+    // Alle anderen (Browser, Windows/Android-App): PDF direkt in neuem Fenster/Tab öffnen,
+    // Speichern und Drucken bringt der PDF-Viewer dort selbst mit.
+    // Der Klick wird schon per trackEvent() gezählt -> nostat=1, damit der PDF-Aufruf
+    // selbst nicht noch einmal zählt (vorher zählte jeder Klick doppelt).
+    window.open(`/${which}?${qs}&nostat=1`, '_blank', 'noopener');
   }
 
   btnPrintV1.addEventListener('click', () => { trackEvent('pdfv1'); openPrint('pdfv1'); });
