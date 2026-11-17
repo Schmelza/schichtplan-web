@@ -167,8 +167,6 @@ export async function onRequestGet({ request, env }) {
   const fiber = parseIntParam(url, "fiber");
   const team  = parseIntParam(url, "team");
   const year  = parseIntParam(url, "year");
-  const dl = url.searchParams.get("dl");
-  const nostat = url.searchParams.get("nostat") === "1"; // Anzeige in der Zwischenseite zaehlt nicht mit
 
   if (!fiber || !team || !year) return new Response("Missing params: fiber, team, year", { status: 400 });
 
@@ -354,19 +352,14 @@ restore();
 
   // ---- Stats (D1): PDF v2 opened / downloaded ----
   try {
-    if (!nostat) await statsInc(env?.STATS_DB, { fiber, team, year, kind: "pdfv2" });
+    await statsInc(env?.STATS_DB, { fiber, team, year, kind: "pdfv2" });
   } catch (e) {
     console.log("STATS_DB update failed (pdfv2)", e);
   }
-  const isDownload = (dl === "1");
-  const disposition = isDownload ? "attachment" : "inline";
-  // wie bei pdfv1: bei dl=1 octet-stream, damit iOS "Laden/Dateien" anbietet
-  const ctype = isDownload ? "application/octet-stream" : "application/pdf";
   return new Response(pdfBytes, {
     headers: {
-      "content-type": ctype,
-      "content-disposition": `${disposition}; filename="${filename}"`,
-      "x-content-type-options": "nosniff",
+      "content-type": "application/pdf",
+      "content-disposition": `inline; filename="${filename}"`,
       "cache-control": "no-store"
     }
   });
