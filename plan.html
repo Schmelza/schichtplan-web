@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Schichtplan</title>
+  <style>
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%}
+    body{
+      display:flex;flex-direction:column;
+      height:100vh;height:100dvh;
+      font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+      background:#f3f4f6;color:#111827;
+    }
+    .bar{
+      display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+      padding:10px 12px;background:#fff;border-bottom:1px solid #e5e7eb;
+    }
+    .title{flex:1 1 220px;min-width:0;font-weight:700;font-size:14px;line-height:1.3}
+    .btn{
+      appearance:none;display:inline-flex;align-items:center;gap:6px;
+      border:1px solid #d1d5db;background:#f3f4f6;color:#111827;
+      border-radius:12px;padding:10px 14px;
+      font:inherit;font-size:15px;font-weight:650;text-decoration:none;cursor:pointer;
+    }
+    .btn:hover{background:#e5e7eb}
+    .stage{flex:1;min-height:0}
+    iframe{display:block;width:100%;height:100%;border:0;background:#fff}
+    .msg{padding:28px 18px;text-align:center;line-height:1.5}
+    .msg[hidden]{display:none}
+
+    /* Beim Drucken erscheinen nur der Plan, nie die Knöpfe */
+    @page{size:A4 landscape;margin:0}
+    @media print{
+      .bar,.msg{display:none !important}
+      html,body{height:auto;background:#fff}
+      .stage{display:block}
+      iframe{width:100%;height:100vh}
+    }
+  </style>
+</head>
+<body>
+  <div class="bar" id="bar">
+    <div class="title" id="title">Schichtplan</div>
+    <a class="btn" id="save" download>⬇ Speichern</a>
+    <button class="btn" id="print" type="button">🖨 Drucken</button>
+    <a class="btn" id="full">⤢ Vollbild</a>
+  </div>
+
+  <div class="stage">
+    <iframe id="frame" title="Schichtplan" hidden></iframe>
+    <div class="msg" id="msg" hidden></div>
+  </div>
+
+  <noscript><div class="msg">Diese Seite braucht JavaScript.</div></noscript>
+
+<script>
+(function(){
+  var q = new URLSearchParams(location.search);
+  var t = q.get('t');
+  var NAMES = { pdfv1: 'Jahresplan Monate untereinander', pdfv2: 'Jahresplan Monate nebeneinander' };
+  function num(k){ var v = q.get(k); return /^\d{1,4}$/.test(v || '') ? v : null; }
+  var fiber = num('fiber'), team = num('team'), year = num('year');
+
+  var bar = document.getElementById('bar');
+  var titleEl = document.getElementById('title');
+  var saveEl = document.getElementById('save');
+  var printEl = document.getElementById('print');
+  var fullEl = document.getElementById('full');
+  var frame = document.getElementById('frame');
+  var msg = document.getElementById('msg');
+
+  function showMsg(text, withLinks){
+    msg.textContent = text;
+    msg.hidden = false;
+    frame.hidden = true;
+    printEl.hidden = true;
+    if (!withLinks){ saveEl.hidden = true; fullEl.hidden = true; }
+  }
+
+  if (!NAMES[t] || !fiber || !team || !year){
+    showMsg('Ungültiger Link. Bitte auf der Startseite „Generieren“ und dann den Jahresplan wählen.', false);
+    return;
+  }
+
+  var base = '/' + t + '?fiber=' + fiber + '&team=' + team + '&year=' + year;
+  titleEl.textContent = NAMES[t] + ' · Fiber ' + fiber + ' · P' + team + ' · ' + year;
+  document.title = 'Schichtplan ' + year + ' Fiber ' + fiber + ' P' + team;
+
+  // Speichern zählt als eigene Aktion (ohne nostat), Anzeige und Vollbild nicht.
+  saveEl.href = base + '&dl=1';
+  fullEl.href = base + '&nostat=1';
+
+  var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+              (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var canInline = navigator.pdfViewerEnabled === true || isIOS;
+
+  if (!canInline){
+    // z.B. Android-Chrome: zeigt PDFs nicht eingebettet an
+    showMsg('Dieses Gerät zeigt PDFs nicht in der Seite an. Nutze „Vollbild“ zum Öffnen oder „Speichern“.', true);
+    return;
+  }
+
+  frame.hidden = false;
+  frame.src = base + '&nostat=1#navpanes=0&view=Fit';
+
+  printEl.addEventListener('click', function(){
+    if (isIOS){ window.print(); return; }
+    try {
+      frame.contentWindow.focus();
+      frame.contentWindow.print();
+    } catch (e) {
+      window.print();
+    }
+  });
+})();
+</script>
+</body>
+</html>

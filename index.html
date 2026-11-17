@@ -404,7 +404,7 @@
   function updateCounterView(value){
     const el = document.getElementById('genCounter');
     if(el && typeof value === 'number'){
-      el.textContent = 'Nutzung bisher: ' + value;
+      el.textContent = 'Generierungen insgesamt: ' + value;
     }
   }
 
@@ -597,17 +597,28 @@
     const isStandalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
                          (window.navigator && window.navigator.standalone === true);
 
-    let url = `/${which}?fiber=${encodeURIComponent(fiber)}&team=${encodeURIComponent(team)}&year=${encodeURIComponent(year)}`;
+    const qs = `fiber=${encodeURIComponent(fiber)}&team=${encodeURIComponent(team)}&year=${encodeURIComponent(year)}`;
+    let url = `/${which}?${qs}`;
+
+    // Der Klick wird schon per trackEvent() gezählt -> nostat=1, damit der
+    // PDF-Aufruf selbst nicht noch einmal zählt (vorher zählte jeder Klick doppelt).
 
     // iOS Homescreen/Web-App: force real download so user can print from Dateien/Share.
     if (isIOS && isStandalone){
-      url += '&dl=1';
+      url += '&dl=1&nostat=1';
       location.href = url;
       return;
     }
 
-    // Everywhere else (incl. Windows/Android PWA): open in a new window/tab so the app stays open.
-    window.open(url, '_blank', 'noopener');
+    // Browser mit eingebautem PDF-Viewer (Desktop, iPhone/iPad-Safari):
+    // Zwischenseite mit Speichern-/Drucken-Knöpfen, die beim Drucken ausgeblendet werden.
+    if (isIOS || navigator.pdfViewerEnabled === true){
+      window.open(`/plan?t=${encodeURIComponent(which)}&${qs}`, '_blank', 'noopener');
+      return;
+    }
+
+    // Alle anderen (z.B. Android-Chrome, lädt PDFs direkt herunter): wie bisher das PDF öffnen.
+    window.open(url + '&nostat=1', '_blank', 'noopener');
   }
 
   btnPrintV1.addEventListener('click', () => { trackEvent('pdfv1'); openPrint('pdfv1'); });
