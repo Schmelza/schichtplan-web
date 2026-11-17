@@ -163,6 +163,7 @@ export async function onRequestGet({ request, env }) {
 
   
   const dl = url.searchParams.get("dl");
+  const nostat = url.searchParams.get("nostat") === "1"; // Anzeige in der Zwischenseite zaehlt nicht mit
 if (!fiber || !team || !year) return new Response("Missing params: fiber, team, year", { status: 400 });
 
   const yr = clampAllowedYear(year);
@@ -353,7 +354,7 @@ centerInBox(telLines[2], 4);
 
   // ---- Stats (D1): PDF v1 opened / downloaded ----
   try {
-    await statsInc(env?.STATS_DB, { fiber, team, year, kind: "pdfv1" });
+    if (!nostat) await statsInc(env?.STATS_DB, { fiber, team, year, kind: "pdfv1" });
   } catch (e) {
     console.log("STATS_DB update failed (pdfv1)", e);
   }
