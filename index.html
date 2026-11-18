@@ -456,70 +456,70 @@
       }
     }
 
-    /* Etwas größere Darstellung für Smartphones */
+    /* Smartphone: nochmals 1 Pixel größer */
     @media (max-width: 430px) {
       .wrap {
         max-width: 100%;
-        margin: 18px auto;
-        padding: 0 12px;
+        margin: 19px auto;
+        padding: 0 13px;
       }
 
       h1 {
-        font-size: 28px;
+        font-size: 29px;
         line-height: 1.15;
-        margin-bottom: 12px;
+        margin-bottom: 13px;
         letter-spacing: -0.5px;
       }
 
       .subtitle {
-        font-size: 12px;
-        margin-top: -5px;
-        margin-bottom: 16px;
+        font-size: 13px;
+        margin-top: -6px;
+        margin-bottom: 17px;
       }
 
       .card {
-        padding: 15px;
-        border-radius: 12px;
+        padding: 16px;
+        border-radius: 13px;
       }
 
       .grid {
         grid-template-columns: 1fr;
-        gap: 12px;
+        gap: 13px;
       }
 
       label {
-        font-size: 13px;
-        margin-bottom: 5px;
+        font-size: 14px;
+        margin-bottom: 6px;
       }
 
       select {
-        padding: 10px 11px;
-        font-size: 15px;
-        min-height: 44px;
-        border-radius: 9px;
+        padding: 11px 12px;
+        font-size: 16px;
+        min-height: 45px;
+        border-radius: 10px;
       }
 
       .hint {
-        font-size: 11px;
-        margin-top: 6px;
+        font-size: 12px;
+        margin-top: 7px;
       }
 
       .actions {
-        margin-top: 13px;
-        gap: 8px;
+        margin-top: 14px;
+        gap: 9px;
         flex-direction: column;
       }
 
       button,
       a.btn {
-        font-size: 14px;
-        padding: 10px 12px;
-        border-radius: 9px;
+        font-size: 15px;
+        padding: 11px 13px;
+        border-radius: 10px;
       }
 
       .printPreviewWrap {
         width: 100%;
-        gap: 5px;
+        gap: 6px;
       }
 
       .printPreviewWrap > button.secondary:first-child {
@@ -528,51 +528,51 @@
       }
 
       .previewEye {
-        padding: 9px 10px;
-        font-size: 15px;
+        padding: 10px 11px;
+        font-size: 16px;
       }
 
       .qrgrid {
         grid-template-columns: 1fr;
-        gap: 10px;
+        gap: 11px;
       }
 
       .qrbox {
-        padding: 10px;
+        padding: 11px;
       }
 
       .qrbox a.qrlink {
-        font-size: 13px;
-        padding: 9px;
-        margin-bottom: 9px;
+        font-size: 14px;
+        padding: 10px;
+        margin-bottom: 10px;
       }
 
       .qrbox img {
-        max-width: 185px;
+        max-width: 186px;
       }
 
       .links {
-        gap: 8px;
+        gap: 9px;
       }
 
       #genCounter {
-        font-size: 10px !important;
-      }
-
-      #faqBox {
-        padding: 13px;
-      }
-
-      #faqBox h2 {
-        font-size: 17px !important;
-      }
-
-      #faqBox .hint {
         font-size: 11px !important;
       }
 
+      #faqBox {
+        padding: 14px;
+      }
+
+      #faqBox h2 {
+        font-size: 18px !important;
+      }
+
+      #faqBox .hint {
+        font-size: 12px !important;
+      }
+
       .coffee-link {
-        font-size: 12px;
+        font-size: 13px;
       }
 
       #coffeeBox {
@@ -580,13 +580,13 @@
       }
 
       .pdfPreviewOverlay {
-        top: 70px;
-        width: calc(100vw - 20px);
-        padding: 10px;
+        top: 71px;
+        width: calc(100vw - 21px);
+        padding: 11px;
       }
 
       .pdfPreviewOverlay img {
-        max-height: 62vh;
+        max-height: 63vh;
       }
     }
 
@@ -961,6 +961,7 @@
     setError('');
     outEl.style.display = 'none';
     hasGenerated = false;
+    yearEl.value = '';
     updateButtons();
 
   });
