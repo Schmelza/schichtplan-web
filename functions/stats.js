@@ -153,7 +153,7 @@ export async function onRequestGet({ request, env }) {
 <title>Schichtplan Stats</title>
 <style>
   body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:18px;color:#111}
-  h1{margin:0 0 6px;font-size:18px}
+  h1{margin:0 0 6px;font-size:20px}
   .meta{color:#444;margin:0 0 14px;font-size:13px}
   table{border-collapse:collapse;width:100%}
   th,td{border:1px solid #222;padding:8px 10px;text-align:left;font-size:14px}
