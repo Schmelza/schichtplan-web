@@ -276,6 +276,16 @@
   }
 }
 
+/* Kaffee-Spende: bewusst klein und zurückhaltend */
+.coffee-link{background:none;border:0;color:#6b7280;font-size:12px;font-weight:500;text-decoration:underline;padding:4px 8px;display:inline-block;cursor:pointer}
+.coffee-link:hover{color:#374151}
+#coffeeBox{display:none;max-width:320px;margin:10px auto 0;text-align:center}
+#coffeeBox p{margin:0 0 10px;font-size:14px;line-height:1.4}
+#coffeeBox img{display:block;width:160px;height:160px;margin:0 auto 10px}
+#coffeeBox a.coffee-pay{display:inline-block;background:#f3f4f6;color:#111827;border:1px solid #e5e7eb;border-radius:12px;padding:9px 14px;font-size:14px;font-weight:650;text-decoration:none}
+#coffeeBox a.coffee-pay:hover{background:#e5e7eb}
+#coffeeBox .coffee-note{margin-top:8px;font-size:11px;color:#6b7280}
+
 </style>
 
 </head>
@@ -391,6 +401,17 @@
       <p><strong>Kontakt</strong><br>
       Bei Fragen einfach direkt an Johannes Trippen wenden.</p>
     </div>
+  </div>
+</div>
+
+<!-- Kaffee-Spende (unaufdringlich, eingeklappt) -->
+<div style="text-align:center;margin:14px 0 26px;">
+  <button type="button" id="coffeeToggle" class="coffee-link" aria-expanded="false" aria-controls="coffeeBox" onclick="toggleCoffee()">☕ Kaffee spendieren</button>
+  <div id="coffeeBox" class="card">
+    <p>Gefällt dir der Schichtkalender? Dann zahl mir nen Kaffee – oder auch 2. Ganz freiwillig, 0,50 € kostet ein Kaffee auf der Arbeit.</p>
+    <img src="/kaffee-qr.svg" alt="QR-Code: 0,50 € per PayPal an Johannes Trippen" width="160" height="160">
+    <a class="coffee-pay" href="https://paypal.me/JohannesTrippen/0.50" target="_blank" rel="noopener noreferrer">Per PayPal öffnen</a>
+    <div class="coffee-note">paypal.me/JohannesTrippen</div>
   </div>
 </div>
 </div>
@@ -727,6 +748,15 @@
     const el = document.getElementById("faqBox");
     if(!el) return;
     el.style.display = (el.style.display === "none" || el.style.display === "") ? "block" : "none";
+  }
+
+  function toggleCoffee(){
+    const box = document.getElementById("coffeeBox");
+    const btn = document.getElementById("coffeeToggle");
+    if(!box) return;
+    const open = (box.style.display === "block");
+    box.style.display = open ? "none" : "block";
+    if(btn) btn.setAttribute("aria-expanded", open ? "false" : "true");
   }
 </script>
 
