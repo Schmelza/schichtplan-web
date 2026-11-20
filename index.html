@@ -285,23 +285,30 @@
 #coffeeBox a.coffee-pay{display:inline-block;background:#f3f4f6;color:#111827;border:1px solid #e5e7eb;border-radius:12px;padding:9px 14px;font-size:14px;font-weight:650;text-decoration:none}
 #coffeeBox a.coffee-pay:hover{background:#e5e7eb}
 #coffeeBox .coffee-note{margin-top:8px;font-size:11px;color:#6b7280}
+.faqWrap{margin-top:18px}
+.coffeeWrap{text-align:center;margin:14px 0 8px}
 
-/* Handys (z.B. 6,1 Zoll = 393px Breite): etwas kompakter als am PC, damit das Formular
-   ohne Scrollen auf den Bildschirm passt. Auswahlfelder behalten 16px Schrift, sonst
-   zoomt iOS beim Antippen in die Seite hinein. */
+/* Handys (z.B. 6,1 Zoll = 393px Breite): Die senkrechten Abstände wachsen ab 659px Bildschirmhöhe
+   (dvh) mit und sind nach oben begrenzt; darunter gilt die kompakte Größe. Dadurch füllt die Seite
+   in der App den Bildschirm besser, im Browser (weniger Höhe) bleibt sie kompakt. Die Auswahlfelder
+   behalten 16px Schrift, sonst zoomt iOS beim Antippen in die Seite hinein. */
 @media (max-width:430px){
-  .wrap{margin:24px auto 18px}
-  h1{margin-bottom:14px}
-  .subtitle{margin-top:-8px;margin-bottom:16px}
-  .card{padding:18px}
-  .grid{gap:12px}
-  label{font-size:15px;margin-bottom:6px}
-  .hint{margin-top:8px}
-  .actions{margin-top:14px}
-  .printPreviewWrap > button.secondary:first-child{font-size:14.5px;padding:12px 12px}
+  .wrap{margin:24px auto 18px;margin-top:clamp(24px,calc(24px + (100dvh - 659px) * 0.06),36px)}
+  h1{margin-bottom:14px;margin-bottom:clamp(14px,calc(14px + (100dvh - 659px) * 0.02),20px)}
+  .subtitle{margin-top:-8px;margin-bottom:16px;margin-bottom:clamp(16px,calc(16px + (100dvh - 659px) * 0.06),28px)}
+  .card{padding:18px;padding:clamp(18px,calc(18px + (100dvh - 659px) * 0.04),28px) 18px}
+  .grid{gap:12px;gap:clamp(12px,calc(12px + (100dvh - 659px) * 0.04),22px)}
+  label{font-size:15px;margin-bottom:6px;margin-bottom:clamp(6px,calc(6px + (100dvh - 659px) * 0.02),10px)}
+  select{padding:12px;padding:clamp(12px,calc(12px + (100dvh - 659px) * 0.02),17px) 12px}
+  .hint{margin-top:8px;margin-top:clamp(8px,calc(8px + (100dvh - 659px) * 0.02),13px)}
+  .actions{margin-top:14px;gap:10px;margin-top:clamp(14px,calc(14px + (100dvh - 659px) * 0.06),26px);gap:clamp(10px,calc(10px + (100dvh - 659px) * 0.04),18px)}
+  button.primary{padding:12px 16px;padding:clamp(12px,calc(12px + (100dvh - 659px) * 0.03),18px) 16px}
+  .printPreviewWrap > button.secondary:first-child{font-size:14.5px;padding:12px 12px;padding:clamp(12px,calc(12px + (100dvh - 659px) * 0.02),17px) 12px}
+  .faqWrap{margin-top:18px;margin-top:clamp(18px,calc(18px + (100dvh - 659px) * 0.06),32px)}
+  .coffeeWrap{margin-top:14px;margin-top:clamp(14px,calc(14px + (100dvh - 659px) * 0.04),24px)}
 }
 @media (max-width:380px){
-  .printPreviewWrap > button.secondary:first-child{font-size:12.5px;padding:11px 10px}
+  .printPreviewWrap > button.secondary:first-child{font-size:12.5px;padding-left:10px;padding-right:10px}
 }
 
 </style>
@@ -389,7 +396,7 @@
 </div>
 
 <!-- FAQ -->
-<div style="margin-top:18px;">
+<div class="faqWrap">
   <button onclick="toggleFAQ()" class="secondary" style="width:auto;margin:0 auto;display:block;padding:8px 12px;font-size:14px;">
     FAQ & Anleitung anzeigen
   </button>
@@ -418,7 +425,7 @@
 </div>
 
 <!-- Kaffee-Spende (unaufdringlich, eingeklappt) -->
-<div style="text-align:center;margin:14px 0 8px;">
+<div class="coffeeWrap">
   <button type="button" id="coffeeToggle" class="coffee-link" aria-expanded="false" aria-controls="coffeeBox" onclick="toggleCoffee()">☕ Kaffee spendieren</button>
   <div id="coffeeBox" class="card">
     <p>Gefällt dir meine Arbeit? Dann spendiere mir nen Kaffee</p>
