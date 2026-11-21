@@ -422,9 +422,9 @@
 
       <p><strong>Kontakt</strong><br>
       Fragen, Feedback oder ein Problem? Schreib mir einfach:</p>
-      <p class="contactLinks">
-        ✉️ <a href="mailto:johannestrippen@gmx.de">johannestrippen@gmx.de</a><br>
-        💬 WhatsApp: <a href="https://wa.me/491603218724" target="_blank" rel="noopener noreferrer">0160 3218724</a>
+      <p class="contactLinks" id="contactLinks">
+        ✉️ <a id="contactMail" href="#">E-Mail anzeigen</a><br>
+        💬 WhatsApp: <a id="contactWa" href="#" target="_blank" rel="noopener noreferrer">Nummer anzeigen</a>
       </p>
     </div>
   </div>
@@ -775,10 +775,28 @@
 </script>
 
 <script>
+  // Kontaktdaten stehen nicht im Quelltext und nicht in der Seite, solange das FAQ zu ist.
+  // Sie werden erst beim Aufklappen zusammengesetzt, damit Programme, die Seiten nach
+  // E-Mail-Adressen und Nummern durchsuchen, sie nicht einfach auslesen können.
+  function fillContact(){
+    const box = document.getElementById("contactLinks");
+    if(!box || box.getAttribute("data-ready")) return;
+    const mail = ["johannes", "trippen"].join("") + String.fromCharCode(64) + ["gmx", "de"].join(".");
+    const p = ["160", "321", "8724"];
+    const wa = "49" + p.join("");
+    const aMail = document.getElementById("contactMail");
+    const aWa = document.getElementById("contactWa");
+    if(aMail){ aMail.href = "mailto:" + mail; aMail.textContent = mail; }
+    if(aWa){ aWa.href = "https://wa.me/" + wa; aWa.textContent = "0" + p[0] + " " + p[1] + p[2]; }
+    box.setAttribute("data-ready", "1");
+  }
+
   function toggleFAQ(){
     const el = document.getElementById("faqBox");
     if(!el) return;
-    el.style.display = (el.style.display === "none" || el.style.display === "") ? "block" : "none";
+    const opening = (el.style.display === "none" || el.style.display === "");
+    el.style.display = opening ? "block" : "none";
+    if(opening) fillContact();
   }
 
   function toggleCoffee(){
