@@ -277,6 +277,25 @@ async function ensureStatsSchema(db){
   }
 }
 
+// Protokoll der Einzelaktionen für die Liste "Letzte 5 Aktionen" auf /stats.
+// Speichert nur Zeit, Aktion, Fiber, Team, Jahr (keine Personendaten) und behält die letzten
+// 100 Einträge. Darf die eigentliche Zählung nie stören, Fehler werden ignoriert.
+let eventsSchemaReady = false;
+const EVENTS_KEEP = 100;
+async function logStatsEvent(db, { fiber, team, year, kind, ts }){
+  if (!db) return;
+  try {
+    if (!eventsSchemaReady){
+      await db.prepare("CREATE TABLE IF NOT EXISTS stats_events (id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT NOT NULL, fiber INTEGER, team INTEGER, year INTEGER, kind TEXT NOT NULL)").run();
+      eventsSchemaReady = true;
+    }
+    await db.prepare("INSERT INTO stats_events (ts, fiber, team, year, kind) VALUES (?, ?, ?, ?, ?)")
+      .bind(ts || new Date().toISOString(), fiber, team, year, kind).run();
+    await db.prepare("DELETE FROM stats_events WHERE id <= (SELECT MAX(id) FROM stats_events) - ?")
+      .bind(EVENTS_KEEP).run();
+  } catch (_) { /* Protokoll ist optional */ }
+}
+
 async function statsInc(db, { fiber, team, year, kind }){
   // kind: 'generate' | 'ics' | 'pdfv1' | 'pdfv2'
   if (!db) return;
@@ -290,6 +309,7 @@ async function statsInc(db, { fiber, team, year, kind }){
       ON CONFLICT(fiber,team,year)
       DO UPDATE SET count = count + 1, last_ts = excluded.last_ts
     `).bind(fiber, team, year, now).run();
+    await logStatsEvent(db, { fiber, team, year, kind, ts: now });
     return;
   }
 
@@ -314,10 +334,11 @@ async function statsInc(db, { fiber, team, year, kind }){
         ${m.t} = ?
     WHERE fiber=? AND team=? AND year=?
   `).bind(now, fiber, team, year).run();
+  await logStatsEvent(db, { fiber, team, year, kind, ts: now });
 }
 
 export {
   MIN_YEAR, TEL, parseIntParam, clampAllowedYear, currentBerlinYear, shiftForDate,
   isHolidayRLP, getFerienSetForYear, isFerien, getFeiertageSetForYear, isHoliday, teamLabel, safeHtml,
-  ensureStatsSchema, statsInc
+  ensureStatsSchema, statsInc, logStatsEvent
 };

@@ -38,6 +38,7 @@ export async function onRequestPost({ request, env }) {
       await env.STATS_DB.prepare(`
         DELETE FROM stats
       `).run();
+      try { await env.STATS_DB.prepare("DELETE FROM stats_events").run(); } catch (_) { /* Tabelle gibt es evtl. noch nicht */ }
     } catch (e) {
       return new Response("DB error: " + (e?.message || String(e)), { status: 500 });
     }
@@ -145,6 +146,28 @@ export async function onRequestGet({ request, env }) {
     </tr>`;
   }).join("");
 
+  // Letzte 5 Einzelaktionen (neueste zuerst) aus dem Protokoll
+  let events = [];
+  try {
+    const evRes = await env.STATS_DB.prepare("SELECT ts, fiber, team, year, kind FROM stats_events ORDER BY id DESC LIMIT 5").all();
+    events = evRes.results || [];
+  } catch (_) { events = []; /* Tabelle gibt es erst nach der ersten Aktion */ }
+  const KIND_LABEL = { generate: "Generieren", ics: "ICS / Abo / RAW", pdfv1: "PDF v1", pdfv2: "PDF v2" };
+  const eventsBody = events.map((e, i) => `<tr${i === 0 ? ' class="latest-row"' : ""}>
+      <td>${esc(fmtBerlin(e.ts))}</td>
+      <td>${esc(KIND_LABEL[e.kind] || e.kind)}</td>
+      <td>${esc(e.fiber)}</td>
+      <td>P${esc(e.team)}</td>
+      <td>${esc(e.year)}</td>
+    </tr>`).join("");
+  const recentHtml = `<h2 class="recent-h">Letzte 5 Aktionen</h2>
+  <table class="recent">
+    <thead><tr><th>Zeit</th><th>Aktion</th><th>Fiber</th><th>Team</th><th>Jahr</th></tr></thead>
+    <tbody>
+      ${eventsBody || '<tr><td colspan="5">Noch keine Aktionen aufgezeichnet (die Liste startet mit diesem Update).</td></tr>'}
+    </tbody>
+  </table>`;
+
   const html = `<!doctype html>
 <html lang="de">
 <head>
@@ -160,6 +183,8 @@ export async function onRequestGet({ request, env }) {
   th{background:#f2f2f2}
   .sub{margin-top:4px;font-size:11px;color:#666;line-height:1.2}
   .small{font-size:12px;color:#555;margin-top:10px}
+  .recent-h{margin:0 0 8px;font-size:16px}
+  table.recent{margin:0 0 22px}
   .latest{margin:0 0 14px;padding:8px 10px;background:#fff3b0;border:1px solid #e0b800;border-radius:8px;font-size:14px}
   tr.latest-row td{background:#fff8d6}
   td.latest-cell{background:#ffd54a !important;box-shadow:inset 0 0 0 2px #e0a800}
@@ -196,6 +221,8 @@ export async function onRequestGet({ request, env }) {
       </button>
     </form>
   </div>
+
+  ${recentHtml}
 
   <table>
     <thead>

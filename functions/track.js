@@ -1,4 +1,4 @@
-import { clampAllowedYear, parseIntParam } from "./_common.js";
+import { clampAllowedYear, parseIntParam, logStatsEvent } from "./_common.js";
 
 function colMap(ev){
   if (ev === "pdfv1") return ["pdfv1_count", "last_pdfv1_ts"];
@@ -33,6 +33,8 @@ export async function onRequest({ request, env }) {
       DO UPDATE SET ${countCol} = COALESCE(stats.${countCol}, 0) + 1,
                     ${tsCol} = excluded.${tsCol}
     `).bind(fiber, team, year, nowIso).run();
+
+    await logStatsEvent(env.STATS_DB, { fiber, team, year, kind: ev, ts: nowIso });
 
     return new Response(JSON.stringify({ ok: true }), {
       headers: { "content-type":"application/json; charset=utf-8", "cache-control":"no-store" }
